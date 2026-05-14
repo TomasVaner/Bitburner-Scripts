@@ -1,3 +1,5 @@
+import { HackOperation } from "./network_packets";
+
 export function ConvertToArgs(obj: any)
 {
 	let ret = [] as ScriptArg[]
@@ -101,5 +103,31 @@ export namespace Contract
 			filename: string,
 			hostname: string
 		}
+	}
+}
+
+export namespace Hacking {
+	export type HackArgs = {
+		target: string,
+		log_file: string,
+		port_index: number,
+		log_prefix: string,
+	}
+
+	export type HackFinishAtArgs = HackArgs & {
+		finish_at: number,
+		process_time: number
+	}
+
+	export type HackRunAtArgs = HackArgs & {
+		run_at: number,
+	}
+
+	export type HackDelayArgs = HackArgs & {
+		delay: number,
+	}
+
+	export type HackDelayUniArgs = HackDelayArgs & {
+		operation: HackOperation,
 	}
 }
