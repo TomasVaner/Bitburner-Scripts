@@ -90,3 +90,16 @@ export function ConvertArgsToFlags<T extends Object>(args: ScriptArg[], template
 	}
 	return obj;
 }
+
+export namespace Contract
+{
+	export namespace Solver{
+		export type TypeSolverArgs = {
+			type: CodingContractName 
+		}
+		export type FileSolverArgs = TypeSolverArgs & {
+			filename: string,
+			hostname: string
+		}
+	}
+}
