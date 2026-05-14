@@ -1,4 +1,4 @@
-import { InfiltrationLocation } from "../NetscriptDefinitions";
+import { InfiltrationLocation } from '@ns';
 
 export async function main(ns: NS) {
 	ns.clearLog();

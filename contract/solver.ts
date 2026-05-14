@@ -1,113 +1,110 @@
-import { PortNumbers } from "../utility/constants"
-import { ContractSolveResultPacket } from "../utility/network_packets"
-import { Logger } from "../utility/log"
-import { ConvertToFlagsData, Contract } from "@/utility/flags";
+import { PortNumbers } from '@/utility/constants';
+import { ContractSolveResultPacket } from '@/utility/network_packets';
+import { Logger } from '@/utility/log';
+import { ConvertToFlagsData, Contract } from '@/utility/flags';
 
-const flags_struct : Contract.Solver.FileSolverArgs & Contract.Solver.TypeSolverArgs =
-{
-  filename: "",
-  hostname: "home",
-  type: "" as CodingContractName
-}
+const flags_struct: Contract.Solver.FileSolverArgs & Contract.Solver.TypeSolverArgs = {
+  filename: '',
+  hostname: 'home',
+  type: '' as CodingContractName,
+};
 const flags_data = ConvertToFlagsData(flags_struct);
 
 let primes = [2] as number[];
-let known_partitions = [0, 1];
+const known_partitions = [0, 1];
 
 export async function main(ns: NS) {
   ns.disableLog('scan');
   ns.clearLog();
-  let flag = ns.flags(flags_data) as typeof flags_struct;
+  const flag = ns.flags(flags_data) as typeof flags_struct;
 
   let ctype = flag.type;
 
-  let known_types: Partial<Record<CodingContractName, [boolean, (d:any)=>any]>> = {
-    "Subarray with Maximum Sum": [false, SubarrayWithMaximumSum],
-    "Algorithmic Stock Trader I": [false, AlgorithmicStockTraderI],
-    "Find Largest Prime Factor": [false, FindLargestPrimeFactor],
-    "Encryption I: Caesar Cipher": [false, EncryptionICaesarCipher],
-    "Total Ways to Sum": [false, TotalWaysToSum],
-    "Largest Rectangle in a Matrix": [true, LargestRectangleInAMatrix],
-    "Array Jumping Game": [true, ArrayJumpingGame],
-    "Total Number of Primes": [true, TotalNumberOfPrimes],
-    "Square Root": [true, SquareRoot],
-    "HammingCodes: Integer to Encoded Binary": [true, HammingCodesIntegerToEncodedBinary],
-    "Compression I: RLE Compression": [true, CompressionIRLECompression],
-    "Find All Valid Math Expressions": [true, FindAllValidMathExpressions],
-    "Generate IP Addresses": [true, GenerateIPAddressesData],
-    "Proper 2-Coloring of a Graph": [true, Proper2ColoringOfAGraph],
-    "Unique Paths in a Grid II": [true, UniquePathInAGridII],
-    "Spiralize Matrix": [true, SpiralizeMatrix],
-    "Total Ways to Sum II": [true, TotalWaysToSumII],
+  const known_types: Partial<Record<CodingContractName, [boolean, (d: any) => any]>> = {
+    'Subarray with Maximum Sum': [false, SubarrayWithMaximumSum],
+    'Algorithmic Stock Trader I': [false, AlgorithmicStockTraderI],
+    'Find Largest Prime Factor': [false, FindLargestPrimeFactor],
+    'Encryption I: Caesar Cipher': [false, EncryptionICaesarCipher],
+    'Total Ways to Sum': [false, TotalWaysToSum],
+    'Largest Rectangle in a Matrix': [true, LargestRectangleInAMatrix],
+    'Array Jumping Game': [true, ArrayJumpingGame],
+    'Total Number of Primes': [true, TotalNumberOfPrimes],
+    'Square Root': [true, SquareRoot],
+    'HammingCodes: Integer to Encoded Binary': [true, HammingCodesIntegerToEncodedBinary],
+    'Compression I: RLE Compression': [true, CompressionIRLECompression],
+    'Find All Valid Math Expressions': [true, FindAllValidMathExpressions],
+    'Generate IP Addresses': [true, GenerateIPAddressesData],
+    'Proper 2-Coloring of a Graph': [true, Proper2ColoringOfAGraph],
+    'Unique Paths in a Grid II': [true, UniquePathInAGridII],
+    'Spiralize Matrix': [true, SpiralizeMatrix],
+    'Total Ways to Sum II': [true, TotalWaysToSumII],
   };
 
-  if (ctype.length == 0)
-  {
-    if (flag.filename.length == 0)
-    {
+  if (ctype.length == 0) {
+    if (flag.filename.length == 0) {
       ctype = Object.keys(known_types).at(-1) as CodingContractName;
-    }
-    else
-    {
+    } else {
       ctype = ns.codingcontract.getContractType(flag.filename);
     }
   }
 
-  if (!ctype?.length || known_types[ctype] === undefined)
-    return;
+  if (!ctype?.length || known_types[ctype] === undefined) return;
 
-  let logger = new Logger(ns, { extra_name: ctype.replaceAll(' ', '_') });
+  const logger = new Logger(ns, { extra_name: ctype.replaceAll(' ', '_') });
 
   logger.Log(`Running contract '${flag.filename}' with type: ${ctype}.`);
 
   logger.Log(`primes: ${primes.length}, ${primes.at(-1)}, known_partitions: ${known_partitions.length}`);
-  
+
   let train = false;
   if (flag.filename.length == 0) {
-    let contract = ns.codingcontract.createDummyContract(ctype, flag.hostname);
+    const contract = ns.codingcontract.createDummyContract(ctype, flag.hostname);
     if (contract == null) {
-      logger.Log("ERROR: could not create contract");
+      logger.Log('ERROR: could not create contract');
       return;
     }
     flag.filename = contract;
     train = true;
   }
 
-  let ktype = known_types[ctype];
-  let return_obj = new ContractSolveResultPacket(ctype, flag.hostname, train ? "" : flag.filename, "", ns.pid);
-	ns.atExit(() => {
-    if (!return_obj.reward)
-    {
-      let contract_info = ns.codingcontract.getContract(flag.filename, flag.hostname);
-      let data = ns.codingcontract.getData(flag.filename);
-      let data_str = "";
+  const ktype = known_types[ctype];
+  const return_obj = new ContractSolveResultPacket(ctype, flag.hostname, train ? '' : flag.filename, '', ns.pid);
+  ns.atExit(() => {
+    if (!return_obj.reward) {
+      const contract_info = ns.codingcontract.getContract(flag.filename, flag.hostname);
+      const data = ns.codingcontract.getData(flag.filename);
+      let data_str = '';
       try {
         data_str = JSON.stringify(data);
-      }
-      catch(_) {
+      } catch (_) {
         data_str = data.toString();
       }
-      logger.Log(`ERROR: Failed to solve contract of type '${ctype}'. Data '${data_str}. Attempts left: ${contract_info.numTriesRemaining()-1} (${flag.hostname}/${flag.filename})'.`, { global_log: true });
-    }
-    else
-    {
-      logger.Log(`INFO: Succesfully solved contract of type ${ctype}.Reward: ${return_obj.reward} (${flag.hostname}/${flag.filename})`, { global_log: (ktype? ktype[0] : true) })
+      logger.Log(
+        `ERROR: Failed to solve contract of type '${ctype}'. Data '${data_str}. Attempts left: ${
+          contract_info.numTriesRemaining() - 1
+        } (${flag.hostname}/${flag.filename})'.`,
+        { global_log: true },
+      );
+    } else {
+      logger.Log(
+        `INFO: Succesfully solved contract of type ${ctype}.Reward: ${return_obj.reward} (${flag.hostname}/${flag.filename})`,
+        { global_log: ktype ? ktype[0] : true },
+      );
     }
     ns.writePort(PortNumbers.contract_scanner_in, JSON.stringify(return_obj));
-    }, "callback");
-  
+  }, 'callback');
+
   if (ktype !== undefined) {
     logger.Log(`Trying to solve '${ctype}' contract`);
 
-    let data = ns.codingcontract.getData(flag.filename, flag.hostname)
-    let answer = ktype[1](data);
+    const data = ns.codingcontract.getData(flag.filename, flag.hostname);
+    const answer = ktype[1](data);
 
     return_obj.reward = ns.codingcontract.attempt(answer, flag.filename, flag.hostname);
-    
-    if (!return_obj.reward) {
-      throw `Could not solve contract ${flag.filename}/${flag.hostname}`
-    }
 
+    if (!return_obj.reward) {
+      throw `Could not solve contract ${flag.filename}/${flag.hostname}`;
+    }
   }
 
   if (train) {
@@ -122,13 +119,12 @@ export async function main(ns: NS) {
     'Sum' refers to the sum of all the numbers in the subarray.
      6,-1,0,6,6,10,-6,7,5,-8,-6,9,6,3,-1,-7,6,-3,6,7,-10,8","difficulty":1}*/
 
-    let sub_sums = [] as number[][];
+    const sub_sums = [] as number[][];
     let max_sum = data[0];
 
     for (let ind_from = 0; ind_from < data.length; ++ind_from) {
       for (let ind_to = ind_from; ind_to < data.length; ++ind_to) {
-        if (sub_sums[ind_from] == undefined)
-          sub_sums[ind_from] = [];
+        if (sub_sums[ind_from] == undefined) sub_sums[ind_from] = [];
 
         if (ind_to + ind_from == 0) {
           sub_sums[ind_from][ind_to] = data[0];
@@ -137,20 +133,17 @@ export async function main(ns: NS) {
 
         if (ind_from > 0) {
           sub_sums[ind_from][ind_to] = sub_sums[ind_from - 1][ind_to] - data[ind_from - 1];
-        }
-        else {
+        } else {
           sub_sums[ind_from][ind_to] = sub_sums[ind_from][ind_to - 1] + data[ind_to];
         }
-        if (max_sum < sub_sums[ind_from][ind_to])
-          max_sum = sub_sums[ind_from][ind_to];
+        if (max_sum < sub_sums[ind_from][ind_to]) max_sum = sub_sums[ind_from][ind_to];
       }
     }
 
     return max_sum;
   }
 
-  function AlgorithmicStockTraderI(data : number[]) {
-
+  function AlgorithmicStockTraderI(data: number[]) {
     /*{ "type": "Algorithmic Stock Trader I", 
     "data": [133, 12, 166, 146, 106, 37, 82, 126, 89, 155, 123, 81, 122], 
     "description": "You are given the following array of stock prices (which are numbers) 
@@ -164,9 +157,8 @@ export async function main(ns: NS) {
 
     for (let ind_buy = 0; ind_buy < data.length; ++ind_buy) {
       for (let ind_sell = ind_buy + 1; ind_sell < data.length; ++ind_sell) {
-        let profit = data[ind_sell] - data[ind_buy]
-        if (max_profit < profit)
-          max_profit = profit;
+        const profit = data[ind_sell] - data[ind_buy];
+        if (max_profit < profit) max_profit = profit;
       }
     }
 
@@ -174,37 +166,34 @@ export async function main(ns: NS) {
   }
 
   function CheckPrime(num: number) {
-    let p_ind_sqrt = primes.findIndex(p => p >= Math.sqrt(num));
-    if (p_ind_sqrt == -1)
-      throw `primes are not filled enough! Max prime: ${primes.at(-1)}, num: ${num}`
+    const p_ind_sqrt = primes.findIndex((p) => p >= Math.sqrt(num));
+    if (p_ind_sqrt == -1) throw `primes are not filled enough! Max prime: ${primes.at(-1)}, num: ${num}`;
 
-    return !primes.slice(0, p_ind_sqrt + 1).some(p => num % p == 0);
+    return !primes.slice(0, p_ind_sqrt + 1).some((p) => num % p == 0);
   }
 
-  function FindLargestPrimeFactor(data : number) {
-
+  function FindLargestPrimeFactor(data: number) {
     let max_prime = 1;
-    let prime_divisors = [];
+    const prime_divisors = [];
 
-    let limit = Math.sqrt(data);
-    let start_from = (primes.at(-1) ?? 1) + 1;
+    const limit = Math.sqrt(data);
+    const start_from = (primes.at(-1) ?? 1) + 1;
     let numbers_to_check = [] as number[];
 
-    let check_prime = (div: number) => {
-      numbers_to_check = numbers_to_check.filter(n => n % div != 0);
+    const check_prime = (div: number) => {
+      numbers_to_check = numbers_to_check.filter((n) => n % div != 0);
       if (data % div == 0) {
         while (data % div == 0) {
           data /= div;
         }
-        logger.Log(`Data after division by ${div}: ${data}`)
+        logger.Log(`Data after division by ${div}: ${data}`);
         return true;
       }
       return false;
-    }
+    };
 
-    for (let p of primes) {
-      if (p > limit)
-        break;
+    for (const p of primes) {
+      if (p > limit) break;
       if (check_prime(p)) {
         prime_divisors.push(p);
         max_prime = p;
@@ -212,8 +201,7 @@ export async function main(ns: NS) {
     }
 
     for (let div = start_from; div < limit && data > 1; ++div) {
-      if (!CheckPrime(div))
-        continue;
+      if (!CheckPrime(div)) continue;
       primes.push(div);
 
       if (check_prime(div)) {
@@ -221,8 +209,7 @@ export async function main(ns: NS) {
         max_prime = div;
       }
     }
-    if (data > 1)
-      max_prime = data;
+    if (data > 1) max_prime = data;
 
     logger.Log(`${max_prime}, divisors: ${JSON.stringify(prime_divisors)}, last prime: ${primes.at(-1)}`);
     return max_prime;
@@ -240,15 +227,14 @@ export async function main(ns: NS) {
      [\"DEBUG FLASH LOGIN VIRUS MODEM\", 19]
      The first element is the plaintext, the second element is the left shift value.
       Return the ciphertext as uppercase string. Spaces remains the same.","difficulty":1}*/
-    let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let cipher = ""
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let cipher = '';
 
     for (let ind = 0; ind < text.length; ++ind) {
-      let pos = alphabet.indexOf(text[ind]);
+      const pos = alphabet.indexOf(text[ind]);
       if (pos == -1) {
         cipher += text[ind];
-      }
-      else {
+      } else {
         cipher += alphabet.at(pos - shift);
       }
     }
@@ -263,36 +249,31 @@ export async function main(ns: NS) {
   }
 
   function Partitions(n: number): number {
-    if (n == 0)
-      return 1;
-    if (n == 1)
-      return 1;
-    if (known_partitions[n] != undefined)
-      return known_partitions[n];
+    if (n == 0) return 1;
+    if (n == 1) return 1;
+    if (known_partitions[n] != undefined) return known_partitions[n];
 
     let sum = 0;
-    let k = 1
+    let k = 1;
 
     // @ignore-infinite
     while (true) {
-      let sign = (k % 2 == 1) ? 1 : -1;
-      let g = G(k);
-      let g_ = G(-k);
+      const sign = k % 2 == 1 ? 1 : -1;
+      const g = G(k);
+      const g_ = G(-k);
       if (g > n && g_ > n) {
         known_partitions[n] = sum;
         return sum;
       }
 
-      if (g <= n)
-        sum += sign * Partitions(n - g);
-      if (g_ <= n)
-        sum += sign * Partitions(n - g_);
+      if (g <= n) sum += sign * Partitions(n - g);
+      if (g_ <= n) sum += sign * Partitions(n - g_);
 
       ++k;
     }
   }
 
-  function TotalWaysToSum(data : number) {
+  function TotalWaysToSum(data: number) {
     /*{"type":"Total Ways to Sum",
     "data":69,
     "description":
@@ -308,7 +289,7 @@ export async function main(ns: NS) {
       test_partitions.push(ind, parts);
       ns.print(`${ind}\t${parts}`)
     }*/
-    let partitions = Partitions(data);
+    const partitions = Partitions(data);
 
     logger.Log(`${data} -> ${partitions - 1}`);
     return partitions - 1;
@@ -358,7 +339,7 @@ export async function main(ns: NS) {
     Answer: [[0,0],[3,1]]
     ", "difficulty": 6 }*/
 
-    let subsum = [] as number[][][];
+    const subsum = [] as number[][][];
     let max_streak = { h: 0, l: 0, rf: -1, rt: -1, cf: -1, ct: -1 };
     for (let row_f = 0; row_f < data.length; ++row_f) {
       subsum[row_f] = [] as number[][];
@@ -369,12 +350,10 @@ export async function main(ns: NS) {
 
         for (let col = 0; col < data[0].length; ++col) {
           subsum[row_f][row_t][col] = data[row_t][col];
-          if (row_t > row_f)
-            subsum[row_f][row_t][col] += subsum[row_f][row_t - 1][col];
+          if (row_t > row_f) subsum[row_f][row_t][col] += subsum[row_f][row_t - 1][col];
           if (subsum[row_f][row_t][col] > 0) {
             local_streak = { l: 0, cf: -1, ct: -1 };
-          }
-          else {
+          } else {
             if (local_streak.l == 0) {
               local_streak.cf = col;
             }
@@ -392,12 +371,20 @@ export async function main(ns: NS) {
       }
     }
 
-    logger.Log(`${data.reduce((s, r) => s + '\n' + JSON.stringify(r), "")} -> ${JSON.stringify([[max_streak.rf, max_streak.cf], [max_streak.rt, max_streak.ct]])}`);
+    logger.Log(
+      `${data.reduce((s, r) => s + '\n' + JSON.stringify(r), '')} -> ${JSON.stringify([
+        [max_streak.rf, max_streak.cf],
+        [max_streak.rt, max_streak.ct],
+      ])}`,
+    );
 
-    return [[max_streak.rf, max_streak.cf], [max_streak.rt, max_streak.ct]];
+    return [
+      [max_streak.rf, max_streak.cf],
+      [max_streak.rt, max_streak.ct],
+    ];
   }
 
-  function ArrayJumpingGame(data : number[]) {
+  function ArrayJumpingGame(data: number[]) {
     /*{"type":"Array Jumping Game",
     "data":[7,0,1,0,6,10,10,0,0,0,6,0,10,4,0,0,10],
     "description":"You are given the following array of integers:
@@ -409,20 +396,17 @@ export async function main(ns: NS) {
        Your answer should be submitted as 1 or 0, representing true and false respectively.","difficulty":2} */
     let max_distance = 0;
     for (let ind = 0; ind < data.length; ++ind) {
-      if (ind > max_distance || max_distance > data.length)
-        break;
+      if (ind > max_distance || max_distance > data.length) break;
 
       max_distance = Math.max(ind + data[ind], max_distance);
     }
-
-
 
     logger.Log(`Hopped to ${max_distance}/${data.length}: ${data}`);
 
     return max_distance >= data.length - 1 ? 1 : 0;
   }
 
-  function TotalNumberOfPrimes([from, to] : [number, number]) {
+  function TotalNumberOfPrimes([from, to]: [number, number]) {
     /*{"type":"Total Number of Primes",
     "data":[1203909,1547817],
     "description":"You are given two random non-negative integers: 1203909,1547817.
@@ -433,31 +417,31 @@ export async function main(ns: NS) {
     "difficulty":2}*/
     primes = [2];
     let prime_count = 0;
-    let p_ind_f = primes.findIndex(p => p >= from);
-    let p_ind_t = primes.findIndex(p => p > to);
-    if (p_ind_t == -1)
-      p_ind_t = primes.length;
+    let p_ind_f = primes.findIndex((p) => p >= from);
+    let p_ind_t = primes.findIndex((p) => p > to);
+    if (p_ind_t == -1) p_ind_t = primes.length;
 
-    if (p_ind_f >= 0)
-      prime_count += p_ind_t - p_ind_f;
+    if (p_ind_f >= 0) prime_count += p_ind_t - p_ind_f;
 
     let start = primes.at(-1) ?? 2;
-    start += (start == 2 ? 1 : 2);
+    start += start == 2 ? 1 : 2;
 
     for (let iter = start; iter <= to; iter += 2) {
-      if (!CheckPrime(iter))
-        continue;
+      if (!CheckPrime(iter)) continue;
 
       primes.push(iter);
       ++p_ind_t;
       if (iter >= from) {
-        if (prime_count == 0)
-          p_ind_f = primes.length - 1;
+        if (prime_count == 0) p_ind_f = primes.length - 1;
         ++prime_count;
       }
     }
 
-    logger.Log(`Counted ${prime_count}/${primes.length} - [${p_ind_f}, ${p_ind_t - 1}] - [${primes[p_ind_f]}, ${primes[p_ind_t - 1]}]: [${[from, to]}]`);
+    logger.Log(
+      `Counted ${prime_count}/${primes.length} - [${p_ind_f}, ${p_ind_t - 1}] - [${primes[p_ind_f]}, ${
+        primes[p_ind_t - 1]
+      }]: [${[from, to]}]`,
+    );
     return prime_count;
   }
 
@@ -470,15 +454,14 @@ export async function main(ns: NS) {
       x_ = (x + n / x) / 2n;
 
       ++i;
-      let diff = Number(x - x_);
-      logger.Log(`${i}: diff if ${diff}`)
-    } while (x != x_)
+      const diff = Number(x - x_);
+      logger.Log(`${i}: diff if ${diff}`);
+    } while (x != x_);
 
     return x;
   }
 
-  function SquareRoot(num : bigint) {
-
+  function SquareRoot(num: bigint) {
     logger.Log(`Number: ${num}`);
 
     let n = 0;
@@ -490,22 +473,26 @@ export async function main(ns: NS) {
       n++;
     }
 
-    let a = BigInt(Math.ceil(Math.sqrt(Number(s))));
-    let estimate = a * m;
+    const a = BigInt(Math.ceil(Math.sqrt(Number(s))));
+    const estimate = a * m;
 
     let result = HeronMethod(num, estimate);
 
     logger.Log(`Result: ${result}`);
 
     if (result * result != num) {
-      logger.Log(`result_diff /result-1iff: ${Number((result) * (result) - num) / Number((result - 1n) * (result - 1n) - num)}`)
-      logger.Log(`result_diff /result+1iff: ${Number((result) * (result) - num) / Number((result + 1n) * (result + 1n) - num)}`)
+      logger.Log(
+        `result_diff /result-1iff: ${Number(result * result - num) / Number((result - 1n) * (result - 1n) - num)}`,
+      );
+      logger.Log(
+        `result_diff /result+1iff: ${Number(result * result - num) / Number((result + 1n) * (result + 1n) - num)}`,
+      );
     }
 
-    let ratio = Math.abs(Number((result) * (result) - num) / Number((result + 1n) * (result + 1n) - num));
+    const ratio = Math.abs(Number(result * result - num) / Number((result + 1n) * (result + 1n) - num));
 
-    if (num - (result) * (result) > (result + 1n) * (result + 1n) - num) {
-      logger.Log("Increasing the result by 1")
+    if (num - result * result > (result + 1n) * (result + 1n) - num) {
+      logger.Log('Increasing the result by 1');
       ++result;
     }
 
@@ -514,7 +501,7 @@ export async function main(ns: NS) {
     return result;
   }
 
-  function HammingCodesIntegerToEncodedBinary(num : number) {
+  function HammingCodesIntegerToEncodedBinary(num: number) {
     /*type: HammingCodes: Integer to Encoded Binary data: 6221, desc: You are given the following decimal value: 
     6221 
   
@@ -538,7 +525,10 @@ export async function main(ns: NS) {
     For more information on the 'rule' of encoding, refer to Wikipedia (https://wikipedia.org/wiki/Hamming_code) or the 3Blue1Brown videos on Hamming Codes. (https://youtube.com/watch?v=X8jsijhllIA)
     NOTE: The wikipedia entry does not cover the specific 'extended Hamming code' structure used in this contract., diff: 6*/
 
-    let binary = num.toString(2).split('').map(s => Number(s));
+    const binary = num
+      .toString(2)
+      .split('')
+      .map((s) => Number(s));
     let code = [] as number[];
     let pd = [] as string[];
     let data_positions = 0;
@@ -549,15 +539,14 @@ export async function main(ns: NS) {
       parity_bit++;
       pd.push('p');
       if (parity_bit > 1) {
-        pd.push(...'d'.repeat(2 ** (parity_bit - 1) - 1).split(''))
+        pd.push(...'d'.repeat(2 ** (parity_bit - 1) - 1).split(''));
         data_positions += 2 ** (parity_bit - 1) - 1;
       }
-    } while (data_positions < binary.length)
+    } while (data_positions < binary.length);
 
     let result_ind = 0;
     for (let data_ind = 0; data_ind < binary.length; ++data_ind) {
-      while (result_ind < pd.length && pd[result_ind] == 'p')
-        ++result_ind;
+      while (result_ind < pd.length && pd[result_ind] == 'p') ++result_ind;
       code[result_ind++] = binary[data_ind];
     }
 
@@ -565,20 +554,18 @@ export async function main(ns: NS) {
     pd = ['p', ...pd];
 
     let pairity_bits = [] as number[];
-    for (let p = 0; p < parity_bit; ++p)
-      pairity_bits[2 ** p] = 0;
+    for (let p = 0; p < parity_bit; ++p) pairity_bits[2 ** p] = 0;
     pairity_bits[0] = 0;
 
     for (let parity_ind = result_ind; parity_ind >= 0; --parity_ind) {
       if (pd[parity_ind] == 'p') {
-        let p_len = parity_bit ? 2 ** (parity_bit - 1) : 0;
+        const p_len = parity_bit ? 2 ** (parity_bit - 1) : 0;
         --parity_bit;
         code[parity_ind] = pairity_bits[p_len];
         pairity_bits = pairity_bits.splice(0, p_len);
       }
-      for (let p of Object.keys(pairity_bits).map(s => Number(s))) {
-        if (p == 0 ||
-          (Math.floor(parity_ind / p) % 2 == 1)) {
+      for (const p of Object.keys(pairity_bits).map((s) => Number(s))) {
+        if (p == 0 || Math.floor(parity_ind / p) % 2 == 1) {
           pairity_bits[p] ^= code[parity_ind];
         }
       }
@@ -587,7 +574,6 @@ export async function main(ns: NS) {
     logger.Log(`Number: ${num}, Code: ${code}`);
 
     return code.join('');
-
   }
 
   function CompressionIRLECompression(data: string) {
@@ -606,32 +592,26 @@ export async function main(ns: NS) {
         111112333            ->  511233
         zzzzzzzzzzzzzzzzzzz  ->  9z9z1z  (or 9z8z2z, etc.), diff: 2*/
 
-    function CompressRLE(data:string)
-    {
-      let compressed = [] as string[];
+    function CompressRLE(data: string) {
+      const compressed = [] as string[];
       let cur_symbol = '';
       let cur_count = 0;
 
-      for (let d of data.split(''))
-      {
-        if (cur_count == 9
-          || (cur_count > 0 && d != cur_symbol))
-        {
+      for (const d of data.split('')) {
+        if (cur_count == 9 || (cur_count > 0 && d != cur_symbol)) {
           compressed.push(cur_count.toString(), cur_symbol);
           cur_count = 0;
         }
-        if (cur_count == 0)
-        {
+        if (cur_count == 0) {
           cur_symbol = d;
         }
         ++cur_count;
       }
-      if (cur_count > 0)
-        compressed.push(cur_count.toString(), cur_symbol);
+      if (cur_count > 0) compressed.push(cur_count.toString(), cur_symbol);
       return compressed.join('');
     }
 
-    let compressed = CompressRLE(data);
+    const compressed = CompressRLE(data);
 
     logger.Log(`Data: '${data}', Compress: '${compressed}'`);
 
@@ -639,7 +619,7 @@ export async function main(ns: NS) {
   }
 
   function FindAllValidMathExpressions([data, result]: [string, number]) {
-  /*type: Find All Valid Math Expressions
+    /*type: Find All Valid Math Expressions
   data: 6306288607,-87, desc: You are given the following string which contains only digits between 0 and 9:
 
   6306288607
@@ -660,41 +640,40 @@ export async function main(ns: NS) {
 
   Input: digits = "105", target = 5
   Output: ["1*0+5", "10-5"], diff: 10*/
-  let ret = [] as string[];
-  const operations = ["+", "-", "*", undefined]
-  for (let opers_ind = 0; opers_ind < 4 ** (data.length - 1); ++opers_ind)
-  {
-    let operations_inds = opers_ind.toString(4).padStart((data.length - 1),'0').split('').map(s => Number(s));
-    let operations_used = operations_inds.map(i => operations[i])
-    let formula = [data[0]] as (string|undefined)[];
-    for (let iter_ind = 0; iter_ind < (data.length - 1); ++iter_ind)
-    {
-      formula.push(operations_used[iter_ind]);
-      if (operations_used[iter_ind] !== undefined
-        && operations_used[iter_ind+1] === undefined
-        && data[iter_ind + 1] == '0' && iter_ind < data.length - 2)
-      {
-        break;
+    const ret = [] as string[];
+    const operations = ['+', '-', '*', undefined];
+    for (let opers_ind = 0; opers_ind < 4 ** (data.length - 1); ++opers_ind) {
+      const operations_inds = opers_ind
+        .toString(4)
+        .padStart(data.length - 1, '0')
+        .split('')
+        .map((s) => Number(s));
+      const operations_used = operations_inds.map((i) => operations[i]);
+      const formula = [data[0]] as (string | undefined)[];
+      for (let iter_ind = 0; iter_ind < data.length - 1; ++iter_ind) {
+        formula.push(operations_used[iter_ind]);
+        if (
+          operations_used[iter_ind] !== undefined &&
+          operations_used[iter_ind + 1] === undefined &&
+          data[iter_ind + 1] == '0' &&
+          iter_ind < data.length - 2
+        ) {
+          break;
+        }
+        formula.push(data[iter_ind + 1]);
       }
-      formula.push(data[iter_ind + 1]);
-    }
-    if (formula.length != data.length*2 - 1)
-      continue;
+      if (formula.length != data.length * 2 - 1) continue;
 
-    let expr_value = eval(formula.join(''))
-    if (expr_value == result)
-    {
-      logger.Log(`-> Expression [${opers_ind}] ${formula.join('')}=${expr_value}`);
-      ret.push(formula.join(''));
+      const expr_value = eval(formula.join(''));
+      if (expr_value == result) {
+        logger.Log(`-> Expression [${opers_ind}] ${formula.join('')}=${expr_value}`);
+        ret.push(formula.join(''));
+      } else logger.Log(`Expression [${opers_ind}] ${formula.join('')}=${expr_value}`);
     }
-    else
-      logger.Log(`Expression [${opers_ind}] ${formula.join('')}=${expr_value}`);
+
+    logger.Log(`[${data}, ${result}] -> ${ret}`);
+    return ret;
   }
-
-  logger.Log(`[${data}, ${result}] -> ${ret}`);
-  return ret;
-}
-
 
   function GenerateIPAddressesData(data: string) {
     /*type: Generate IP Addresses data: 16929246163, desc: Given the following string containing only digits, return an array with all possible valid IP address combinations that can be created from the string:
@@ -707,22 +686,22 @@ export async function main(ns: NS) {
 
     25525511135 -> ["255.255.11.135", "255.255.111.35"]
     1938718066 -> ["193.87.180.66"], diff: 3 */
-    let digits = data.split('');
-    let ret = [] as string[];
+    const digits = data.split('');
+    const ret = [] as string[];
 
-    for (let lens_ind = 0; lens_ind < 3 ** 4; ++lens_ind)
-    {
-      let lens = lens_ind.toString(3).padStart(4,'0').split('').map(s => Number(s) + 1);
-      if (lens.reduce((a, b) => a+b) != digits.length)
-        continue;
+    for (let lens_ind = 0; lens_ind < 3 ** 4; ++lens_ind) {
+      const lens = lens_ind
+        .toString(3)
+        .padStart(4, '0')
+        .split('')
+        .map((s) => Number(s) + 1);
+      if (lens.reduce((a, b) => a + b) != digits.length) continue;
 
-      let parts = [] as string[];
-      let digits_copy = [...digits];
-      lens.forEach(l => parts.push(digits_copy.splice(0, l).join('')));
-      if (parts.some(p => 
-        (p.length > 1 && p[0] == '0') || Number(p) > 255))
-        continue;
-      ret.push(parts.join('.'))
+      const parts = [] as string[];
+      const digits_copy = [...digits];
+      lens.forEach((l) => parts.push(digits_copy.splice(0, l).join('')));
+      if (parts.some((p) => (p.length > 1 && p[0] == '0') || Number(p) > 255)) continue;
+      ret.push(parts.join('.'));
     }
 
     logger.Log(`${data} -> ${ret}`);
@@ -730,7 +709,7 @@ export async function main(ns: NS) {
     return ret;
   }
 
-  function Proper2ColoringOfAGraph([node_count, links]: [number, [number,number][]]) {
+  function Proper2ColoringOfAGraph([node_count, links]: [number, [number, number][]]) {
     /*type: Proper 2-Coloring of a Graph data: 9,1,6,0,5,6,8,3,5,0,2,0,3,2,4,0,1,4,8,0,8,3,4, desc: You are given the following data, representing a graph:
     [9,[[1,6],[0,5],[6,8],[3,5],[0,2],[0,3],[2,4],[0,1],[4,8],[0,8],[3,4]]]
     Note that "graph", as used here, refers to the field of graph theory, and has no relation to statistics or plotting. 
@@ -748,111 +727,87 @@ export async function main(ns: NS) {
 
     Input: [3, [[0, 1], [0, 2], [1, 2]]]
     Output: [], diff: 7*/
-    let ret = [] as number[];
-    let visited_nodes = [] as boolean[];
-    function colorNode(node: number, color:number)
-    {
-      if (ret[node] === undefined)
-      {
+    const ret = [] as number[];
+    const visited_nodes = [] as boolean[];
+    function colorNode(node: number, color: number) {
+      if (ret[node] === undefined) {
         logger.Log(`Colored ${node} to ${color}`);
         ret[node] = color;
       }
 
       visited_nodes[node] = true;
-      
-      let next_color = 1 - color;
-      
-      for (let l of links)
-      {
-        let next_node : number | undefined;
-        if (node == l[0])
-          next_node = l[1];
-        if (node == l[1])
-          next_node = l[0];
 
-        if (next_node === undefined)
-          continue;
-        if (ret[next_node] !== undefined)
-        {
-          if (ret[next_node] != next_color)
-            return false;
-        }
-        else
-          if (!colorNode(next_node, next_color))
-            return false;
+      const next_color = 1 - color;
+
+      for (const l of links) {
+        let next_node: number | undefined;
+        if (node == l[0]) next_node = l[1];
+        if (node == l[1]) next_node = l[0];
+
+        if (next_node === undefined) continue;
+        if (ret[next_node] !== undefined) {
+          if (ret[next_node] != next_color) return false;
+        } else if (!colorNode(next_node, next_color)) return false;
       }
 
       return true;
     }
     let success = colorNode(0, 0);
-    if (success)
-    {
-      for (let node = 0; node < node_count; ++node)
-      {
-        if (ret[node] === undefined)
-        {
+    if (success) {
+      for (let node = 0; node < node_count; ++node) {
+        if (ret[node] === undefined) {
           success &&= colorNode(node, 0);
         }
       }
     }
 
-    logger.Log(`${success ? "Success!" : "Unsuccessful"}: ${ret}`);
+    logger.Log(`${success ? 'Success!' : 'Unsuccessful'}: ${ret}`);
     return success ? ret : [];
   }
 
-  let known_ways : {
-    [key:string]: number
-  } = {}
-  function TotalWaysToSumII([num, array] : [number, number[]]) {
+  const known_ways: {
+    [key: string]: number;
+  } = {};
+  function TotalWaysToSumII([num, array]: [number, number[]]) {
     /*Total Ways to Sum II data: [139,[1,2,3,5,9,11,12,13,15,19,21,22]], 
     desc: How many different distinct ways can the number 183 be written as a sum of integers contained in the set:
 
     [1,3,11,14,20,21,22,23]?
 
     You may use each integer in the set zero or more times., diff: 2*/
-    let hash = `${JSON.stringify(array)}=${num}`;
-    if (known_ways[hash] !== undefined)
-      return known_ways[hash];
-    
-    array = [...array];
-    while (num < (array.at(-1) ?? 0))
-      array.pop();
+    const hash = `${JSON.stringify(array)}=${num}`;
+    if (known_ways[hash] !== undefined) return known_ways[hash];
 
-    if (array.length == 1)
-    {
-      if(num % array[0] === 0)
-      {
+    array = [...array];
+    while (num < (array.at(-1) ?? 0)) array.pop();
+
+    if (array.length == 1) {
+      if (num % array[0] === 0) {
         known_ways[hash] = 1;
         return 1;
-      }
-      else
-      {
+      } else {
         known_ways[hash] = 0;
         return 0;
       }
     }
-    if (array.length == 0)
-    {
+    if (array.length == 0) {
       known_ways[hash] = 0;
       return 0;
     }
-    let elem = array.pop() ?? Infinity;
+    const elem = array.pop() ?? Infinity;
     let ways = 0;
-    let limit = Math.floor(num / elem);
-    for (let mult = 0; mult < limit; ++mult)
-    {
-      ways += TotalWaysToSumII([num - mult*elem, array]);
+    const limit = Math.floor(num / elem);
+    for (let mult = 0; mult < limit; ++mult) {
+      ways += TotalWaysToSumII([num - mult * elem, array]);
     }
-    if (num % elem == 0)
-    {
+    if (num % elem == 0) {
       ++ways;
     }
     return ways;
-  }   
+  }
 
-  function UniquePathInAGridII(grid:number[][]) {
-
-  /*Unique Paths in a Grid II data: [[0,0,0,0],[0,0,1,0],[0,0,0,0],[1,0,0,0]], desc: You are located in the top-left corner of the following grid:
+  function UniquePathInAGridII(grid: number[][]) {
+    /*Unique Paths in a Grid II data: [[0,0,0,0],[0,0,1,0],[0,0,0,0],[1,0,0,0]], desc: You are located in the top-left corner of the following grid:
 
     0,0,1,0,0,1,0,0,1,
     0,0,0,0,0,0,1,0,0,
@@ -864,30 +819,23 @@ export async function main(ns: NS) {
 
     NOTE: The data returned for this contract is an 2D array of numbers representing the grid., diff: 5*/
 
-    let unique_way = [] as number[][];
-    for (let r = 0; r < grid.length; ++r)
-    {
+    const unique_way = [] as number[][];
+    for (let r = 0; r < grid.length; ++r) {
       unique_way[r] = [];
-      for (let c = 0; c < grid[0].length; ++c)
-      {
-        if (r === 0 && c === 0)
-        {
-          unique_way[r][c] = 1
-        }
-        else if (grid[r][c] > 0)
-        {
+      for (let c = 0; c < grid[0].length; ++c) {
+        if (r === 0 && c === 0) {
+          unique_way[r][c] = 1;
+        } else if (grid[r][c] > 0) {
           unique_way[r][c] = 0;
-        }
-        else {
-          let left = c > 0 ? unique_way[r][c-1] : 0;
-          let up = r > 0 ? unique_way[r-1][c] : 0;
+        } else {
+          const left = c > 0 ? unique_way[r][c - 1] : 0;
+          const up = r > 0 ? unique_way[r - 1][c] : 0;
           unique_way[r][c] = left + up;
         }
       }
     }
 
     return unique_way.at(-1)?.at(-1) ?? 0;
-
   }
 
   function SpiralizeMatrix(matrix: number[][]) {
@@ -923,55 +871,49 @@ export async function main(ns: NS) {
 
     Answer: [1, 2, 3, 4, 8, 12, 11, 10, 9, 5, 6, 7], diff: 2 */
 
-    let ret: number[] = [];
-    let bounds = {
+    const ret: number[] = [];
+    const bounds = {
       left: 0,
       upper: 0,
       right: matrix[0].length,
       bottom: matrix.length,
-    }
+    };
 
     let stage = 0;
-    while (bounds.left < bounds.right && bounds.upper < bounds.bottom)
-    {
-      switch (stage)
-      {
-      case 0:
-        for (let c = bounds.left; c < bounds.right; ++c)
-        {
-          ret.push(matrix[bounds.upper][c]);
-        }
-        ++bounds.upper;
-        break;
-      case 1:
-        --bounds.right;
-        for (let r = bounds.upper; r < bounds.bottom; ++r)
-        {
-          ret.push(matrix[r][bounds.right]);
-        }
-        break;
-      case 2:
-        --bounds.bottom;
-        for (let c = bounds.right - 1; c >= bounds.left; --c)
-        {
-          ret.push(matrix[bounds.bottom][c]);
-        }
-        break;
-      case 3:
-        for (let r = bounds.bottom - 1; r >= bounds.upper; --r)
-        {
-          ret.push(matrix[r][bounds.left]);
-        }
-        ++bounds.left;
+    while (bounds.left < bounds.right && bounds.upper < bounds.bottom) {
+      switch (stage) {
+        case 0:
+          for (let c = bounds.left; c < bounds.right; ++c) {
+            ret.push(matrix[bounds.upper][c]);
+          }
+          ++bounds.upper;
+          break;
+        case 1:
+          --bounds.right;
+          for (let r = bounds.upper; r < bounds.bottom; ++r) {
+            ret.push(matrix[r][bounds.right]);
+          }
+          break;
+        case 2:
+          --bounds.bottom;
+          for (let c = bounds.right - 1; c >= bounds.left; --c) {
+            ret.push(matrix[bounds.bottom][c]);
+          }
+          break;
+        case 3:
+          for (let r = bounds.bottom - 1; r >= bounds.upper; --r) {
+            ret.push(matrix[r][bounds.left]);
+          }
+          ++bounds.left;
       }
       stage = (stage + 1) % 4;
     }
-    logger.Log(`${JSON.stringify(matrix)} -> [${ret}]`)
+    logger.Log(`${JSON.stringify(matrix)} -> [${ret}]`);
     return ret;
   }
 }
 
 export function autocomplete(data: AutocompleteData, args: ScriptArg[]) {
   data.flags(flags_data);
-  return ["--tail"];
+  return ['--tail'];
 }

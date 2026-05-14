@@ -1,12 +1,11 @@
-
 export const PacketType = {
-  new_password: "new_password",
-  request_password: "request_password",
-  request_password_response: "request_password_response",
-  darknet_contract: "darknet_contract",
-  contract_solve_result: "contract_solve_result",
-  hack_operation_result: "hack_operation_result"
-}
+  new_password: 'new_password',
+  request_password: 'request_password',
+  request_password_response: 'request_password_response',
+  darknet_contract: 'darknet_contract',
+  contract_solve_result: 'contract_solve_result',
+  hack_operation_result: 'hack_operation_result',
+};
 
 export class NetworkPacket {
   constructor(type: string) {
@@ -56,7 +55,7 @@ export class DarknetContractReportPacket extends NetworkPacket {
 }
 
 export class ContractSolveResultPacket extends NetworkPacket {
-  constructor(ctype:CodingContractName, server:string, file:string, reward:string, pid:number){
+  constructor(ctype: CodingContractName, server: string, file: string, reward: string, pid: number) {
     super(PacketType.contract_solve_result);
     this.ctype = ctype;
     this.server = server;
@@ -65,17 +64,15 @@ export class ContractSolveResultPacket extends NetworkPacket {
     this.pid = pid;
   }
   ctype: CodingContractName;
-  server:string;
-  file:string;
-  reward:string;
-  pid:number;
+  server: string;
+  file: string;
+  reward: string;
+  pid: number;
 }
 
-export type HackOperation = "hack"|"grow"|"weaken";
-export class HackOperationResultPacket extends NetworkPacket
-{
-  constructor(target:string, result:number, operation:HackOperation, pid:number)
-  {
+export type HackOperation = 'hack' | 'grow' | 'weaken';
+export class HackOperationResultPacket extends NetworkPacket {
+  constructor(target: string, result: number, operation: HackOperation, pid: number) {
     super(PacketType.hack_operation_result);
     this.target = target;
     this.result = result;
@@ -83,7 +80,7 @@ export class HackOperationResultPacket extends NetworkPacket
     this.pid = pid;
   }
   target: string;
-  operation:HackOperation;
+  operation: HackOperation;
   result: number;
-  pid: number
+  pid: number;
 }

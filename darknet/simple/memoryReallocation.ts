@@ -1,3 +1,3 @@
 export async function main(ns: NS) {
-  let result = await ns.dnet.memoryReallocation();
+  await ns.dnet.memoryReallocation();
 }
