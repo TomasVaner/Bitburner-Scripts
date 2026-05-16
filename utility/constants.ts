@@ -20,6 +20,7 @@ export const ScriptNames = {
   weaken_script: '/scripts/hacking/simple/weaken.js',
   hwg_script: '/scripts/hacking/simple/hwg_uni.js',
   flags: '/scripts/utility/flags.js',
+  memory_share: '/scripts/memory_share/share.js',
 };
 
 export const FileNames = {
