@@ -1,6 +1,6 @@
 /** @param {NS} ns */
 import { PortNumbers, Strings, ScriptNames, ProberScripts } from '@/utility/constants';
-import { Logger } from '@/utility/log';
+import { NSLogger } from '@/utility/log';
 import { DarknetContractReportPacket, RequestPasswordPacket, RequestPasswordResponse } from '@/utility/network_packets';
 
 export async function main(ns: NS) {
@@ -9,7 +9,7 @@ export async function main(ns: NS) {
   ns.disableLog('dnet.probe');
   ns.disableLog('sleep');
 
-  const logger = new Logger(ns);
+  const logger = new NSLogger(ns);
 
   const [controller_pid] = ns.args as [number];
   ns.clearPort(ns.pid);

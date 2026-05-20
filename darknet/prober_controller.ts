@@ -1,5 +1,5 @@
 import { ScriptNames, FileNames, PortNumbers, ProberScripts } from '@/utility/constants';
-import { Logger } from '@/utility/log';
+import { NSLogger } from '@/utility/log';
 import {
   PacketType,
   NetworkPacket,
@@ -14,7 +14,7 @@ export async function main(ns: NS) {
 
   const incoming_port = ns.getPortHandle(PortNumbers.probe_controller_in);
   const darkweb = 'darkweb';
-  const logger = new Logger(ns);
+  const logger = new NSLogger(ns);
   logger.Log(`Max links: ${ns.dnet.getStasisLinkLimit()}`);
 
   let passwords: Record<string, string> = {};

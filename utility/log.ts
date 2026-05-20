@@ -1,4 +1,8 @@
-export class Logger {
+export interface Logger {
+  Log(message: string, options?: { file?: boolean; global_log?: boolean; include_timestamp?: boolean }): void;
+}
+
+export class NSLogger implements Logger {
   constructor(ns: NS, { log_file = '', clean = true, extra_name = '', create_file = true } = {}) {
     this.log_file = log_file;
     if (this.log_file.length == 0 && create_file)

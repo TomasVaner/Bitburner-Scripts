@@ -1,5 +1,4 @@
-import { Logger } from '@/utility/log';
-import { PortNumbers } from '@/utility/constants';
+import { NSLogger } from '@/utility/log';
 import { HackOperationResultPacket, HackOperation } from '@/utility/network_packets';
 import { ConvertToFlagsData, Hacking } from '@/utility/flags';
 

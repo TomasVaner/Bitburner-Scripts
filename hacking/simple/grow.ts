@@ -1,4 +1,4 @@
-import { Logger } from '@/utility/log';
+import { NSLogger } from '@/utility/log';
 import { HackOperationResultPacket } from '@/utility/network_packets';
 import { ConvertToFlagsData, Hacking } from '@/utility/flags';
 
@@ -18,7 +18,12 @@ export async function main(ns: NS) {
   const operation = 'grow';
   const flag = ns.flags(flags_data) as typeof flags_struct;
 
-  const logger = new Logger(ns, { log_file: flag.log_file, clean: false, extra_name: flag.target, create_file: false });
+  const logger = new NSLogger(ns, {
+    log_file: flag.log_file,
+    clean: false,
+    extra_name: flag.target,
+    create_file: false,
+  });
   logger.prefix = `${ns.pid}${flag.log_prefix}: `;
   logger.include_timestamp = true;
   logger.logger_enabled = flag.log_file.length > 0;

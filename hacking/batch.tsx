@@ -1,5 +1,5 @@
-import { ScriptNames, HackScripts, Strings } from '../utility/constants';
-import { Logger } from '../utility/log';
+import { ScriptNames, HackScripts, Strings } from '@/utility/constants';
+import { NSLogger } from '@/utility/log';
 import { GetAllServers, GetFreeRam, GetRoute, Weight } from '@/utility/scanner';
 import { ConvertArgsToFlags, ConvertToArgs, ConvertToFlagsData, Hacking } from '@/utility/flags';
 import { ProgressBar } from '@/ui/progress_bar';
@@ -42,9 +42,8 @@ export async function main(ns: NS) {
     ns.disableLog('sleep');
     ns.disableLog('asleep');
   } // ignore logs
-  const logger = new Logger(ns);
+  const logger = new NSLogger(ns);
   logger.Log('Started hacking');
-  ns.print(`Started hacking`);
   ns.clearLog();
 
   const hackRam = ns.getScriptRam(ScriptNames.hack_script);

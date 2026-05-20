@@ -1,5 +1,5 @@
 import { PortNumbers } from '@/utility/constants';
-import { Logger } from '@/utility/log';
+import { NSLogger } from '@/utility/log';
 import { NewPasswordPacket } from '@/utility/network_packets';
 
 export async function main(ns: NS) {
@@ -9,7 +9,7 @@ export async function main(ns: NS) {
   if (details.modelId.length == 0) return;
   const model_id = details.modelId.replaceAll(' ', '_');
 
-  const logger = new Logger(ns, { extra_name: `${model_id.replaceAll(' ', '_')}/${hostname}` });
+  const logger = new NSLogger(ns, { extra_name: `${model_id.replaceAll(' ', '_')}/${hostname}` });
 
   const res = await authenticate(hostname);
   details = ns.dnet.getServerAuthDetails(hostname);

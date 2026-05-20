@@ -1,6 +1,6 @@
 import { GetAllServers } from '@/utility/scanner';
 import { PortNumbers, ScriptNames, FileNames, Strings } from '@/utility/constants';
-import { Logger } from '@/utility/log';
+import { NSLogger } from '@/utility/log';
 import {
   PacketType,
   NetworkPacket,
@@ -23,7 +23,7 @@ export async function main(ns: NS) {
 
   ns.clearPort(PortNumbers.contract_scanner_in);
 
-  const logger = new Logger(ns);
+  const logger = new NSLogger(ns);
 
   const solvable_types: Partial<Record<CodingContractName, boolean>> = {
     'Subarray with Maximum Sum': true,
@@ -37,11 +37,13 @@ export async function main(ns: NS) {
     'Square Root': true,
     'HammingCodes: Integer to Encoded Binary': true,
     'Compression I: RLE Compression': true,
-    'Find All Valid Math Expressions': true,
     'Generate IP Addresses': true,
     'Proper 2-Coloring of a Graph': true,
     'Unique Paths in a Grid II': true,
     'Spiralize Matrix': true,
+    'Sanitize Parentheses in Expression': true,
+    'Total Ways to Sum II': true,
+    //'Find All Valid Math Expressions': true,
   };
 
   let waiting_script = [] as number[];
