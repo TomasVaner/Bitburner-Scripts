@@ -60,6 +60,7 @@ export async function main(ns: NS) {
           hostname,
           {
             preventDuplicates: true, // This prevents running multiple copies of this script
+            temporary: true,
           },
           ...ns.args,
         );
@@ -68,20 +69,20 @@ export async function main(ns: NS) {
 
     // TODO: free up blocked ram on this server using ns.dnet.memoryReallocation
     if (ns.dnet.getBlockedRam() > 0) {
-      ns.exec(ScriptNames.memory_reallocation, ns.getHostname());
+      ns.exec(ScriptNames.memory_reallocation, ns.getHostname(), { temporary: true });
     }
 
     if (ns.ls(ns.getHostname(), '.cache').length > 0 && !ns.isRunning(ScriptNames.open_chache)) {
-      ns.exec(ScriptNames.open_chache, ns.getHostname());
+      ns.exec(ScriptNames.open_chache, ns.getHostname(), { temporary: true });
     }
 
     if (all_neighbours_connected) {
       for (const hostname of nearbyServers) {
         if (hostname == 'darkweb') continue;
-        if (ns.exec(ScriptNames.induce_server_migration, ns.getHostname(), 1, hostname))
+        if (ns.exec(ScriptNames.induce_server_migration, ns.getHostname(), { temporary: true }, hostname))
           logger.Log(`Inducing instability in ${hostname}.`);
       }
-      ns.exec(ScriptNames.phishing_attack, ns.getHostname());
+      ns.exec(ScriptNames.phishing_attack, ns.getHostname(), { temporary: true });
     }
 
     await ns.sleep(5000);
@@ -130,7 +131,7 @@ export async function main(ns: NS) {
 
     if (!ns.isRunning(ScriptNames.crack_password, ns.getHostname(), hostname, details.modelId)) {
       logger.Log(`starting script crack_password.js`);
-      ns.exec(ScriptNames.crack_password, ns.getHostname(), 1, hostname, details.modelId);
+      ns.exec(ScriptNames.crack_password, ns.getHostname(), { temporary: true }, hostname, details.modelId);
     } else {
       logger.Log(`script crack_password.js is already running on ${hostname}`);
     }
