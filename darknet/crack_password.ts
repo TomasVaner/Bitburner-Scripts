@@ -5,14 +5,14 @@ import { NewPasswordPacket } from '@/utility/network_packets';
 export async function main(ns: NS) {
   const [hostname] = ns.args as [string];
 
-  let details = ns.dnet.getServerAuthDetails(hostname);
+  let details = ns.dnet.getServerDetails(hostname);
   if (details.modelId.length == 0) return;
   const model_id = details.modelId.replaceAll(' ', '_');
 
   const logger = new NSLogger(ns, { extra_name: `${model_id.replaceAll(' ', '_')}/${hostname}` });
 
   const res = await authenticate(hostname);
-  details = ns.dnet.getServerAuthDetails(hostname);
+  details = ns.dnet.getServerDetails(hostname);
   if (!res.success) {
     if (details.isConnectedToCurrentServer && details.isOnline) {
       logger.Log(
@@ -42,7 +42,7 @@ export async function main(ns: NS) {
   }
 
   async function authenticate(hostname: string) {
-    const details = ns.dnet.getServerAuthDetails(hostname);
+    const details = ns.dnet.getServerDetails(hostname);
     logger.Log(JSON.stringify(details));
     switch (details.modelId) {
       case 'ZeroLogon':
@@ -114,7 +114,7 @@ export async function main(ns: NS) {
   }
 
   function IsServerReachable(hostname: string) {
-    const details = ns.dnet.getServerAuthDetails(hostname);
+    const details = ns.dnet.getServerDetails(hostname);
     return details.isOnline && details.isConnectedToCurrentServer;
   }
 
@@ -128,14 +128,14 @@ export async function main(ns: NS) {
   }
 
   async function AuthenticateWithMemo(hostname: string) {
-    const details = ns.dnet.getServerAuthDetails(hostname);
+    const details = ns.dnet.getServerDetails(hostname);
     const pass = details.passwordHint.slice(-details.passwordLength);
     const result = await ns.dnet.authenticate(hostname, pass);
     return { pass: pass, success: result.success, source: 'authenticate' };
   }
 
   async function AuthenticateWithPr0verFl0(hostname: string) {
-    const details = ns.dnet.getServerAuthDetails(hostname);
+    const details = ns.dnet.getServerDetails(hostname);
     const pass = 'a'.repeat(details.passwordLength * 2);
     logger.Log(`Trying password ${pass}`);
     const result = await ns.dnet.authenticate(hostname, pass);
@@ -143,7 +143,7 @@ export async function main(ns: NS) {
   }
 
   async function AuthenticateWithBellaCuore(hostname: string) {
-    const details = ns.dnet.getServerAuthDetails(hostname);
+    const details = ns.dnet.getServerDetails(hostname);
     const roman_numerals = new Map<string, number>([
       ['I', 1],
       ['V', 5],
@@ -167,7 +167,7 @@ export async function main(ns: NS) {
   }
 
   async function AuthenticateWithCloudBlare(hostname: string) {
-    const details = ns.dnet.getServerAuthDetails(hostname);
+    const details = ns.dnet.getServerDetails(hostname);
     let pass = '';
     logger.Log(details.data);
     for (let i = 0; i < details.data.length; ++i)
@@ -178,7 +178,7 @@ export async function main(ns: NS) {
   }
 
   async function AuthenticateWithOctantVoxel(hostname: string) {
-    const details = ns.dnet.getServerAuthDetails(hostname);
+    const details = ns.dnet.getServerDetails(hostname);
     const [base_str, num_str] = details.data.split(',');
     const base = Number(base_str);
     const num = parseInt(num_str, base);
@@ -190,7 +190,7 @@ export async function main(ns: NS) {
   }
 
   async function AuthenticateWithFreshInstall(hostname: string) {
-    const details = ns.dnet.getServerAuthDetails(hostname);
+    const details = ns.dnet.getServerDetails(hostname);
 
     const passwords = ['admin', 'password', '0000', '12345'];
 
@@ -203,7 +203,7 @@ export async function main(ns: NS) {
   }
 
   async function AuthenticateWithLaika4(hostname: string) {
-    const details = ns.dnet.getServerAuthDetails(hostname);
+    const details = ns.dnet.getServerDetails(hostname);
 
     const passwords = ['fido', 'spot', 'rover', 'max'];
 
@@ -216,7 +216,7 @@ export async function main(ns: NS) {
   }
 
   async function AuthenticateWithNIL(hostname: string) {
-    let details = ns.dnet.getServerAuthDetails(hostname);
+    let details = ns.dnet.getServerDetails(hostname);
 
     const alphabet = '0123456789'.split('');
 
@@ -248,7 +248,7 @@ export async function main(ns: NS) {
         }
       }
 
-      details = ns.dnet.getServerAuthDetails(hostname);
+      details = ns.dnet.getServerDetails(hostname);
       if (details.passwordLength != yes.length) return { success: false, source: 'Password length mismatch' };
 
       const pass_next = '_'.repeat(details.passwordLength).split('');
@@ -276,7 +276,7 @@ export async function main(ns: NS) {
   }
 
   async function AuthenticateWithAccountsManager(hostname: string) {
-    let details = ns.dnet.getServerAuthDetails(hostname);
+    let details = ns.dnet.getServerDetails(hostname);
     const regex = /The password is a number between (\d+) and (\d+)/;
     const match = details.passwordHint.match(regex);
     if (!match) {
@@ -289,7 +289,7 @@ export async function main(ns: NS) {
       const logs = await Heartbleed(hostname);
 
       if (!IsServerReachable(hostname)) return { success: false, source: 'Server unreachable' };
-      details = ns.dnet.getServerAuthDetails(hostname);
+      details = ns.dnet.getServerDetails(hostname);
       for (const log of logs) {
         logger.Log(JSON.stringify(log));
         if (log.passwordAttempted.length != details.passwordLength) continue;
@@ -322,7 +322,7 @@ export async function main(ns: NS) {
   }
 
   async function AuthenticateWithFactorio(hostname: string) {
-    const details = ns.dnet.getServerAuthDetails(hostname);
+    const details = ns.dnet.getServerDetails(hostname);
 
     const divisors = [1];
     const non_divisors = [] as number[];
@@ -397,7 +397,7 @@ export async function main(ns: NS) {
   }
 
   async function AuthenticateWithPHP(hostname: string) {
-    const details = ns.dnet.getServerAuthDetails(hostname);
+    const details = ns.dnet.getServerDetails(hostname);
     const data = details.data.split('');
     const identity = [] as number[];
     const perm = [] as number[];
@@ -445,7 +445,7 @@ export async function main(ns: NS) {
   }
 
   async function AuthenticateWithDeepGreen(hostname: string) {
-    const details = ns.dnet.getServerAuthDetails(hostname);
+    const details = ns.dnet.getServerDetails(hostname);
 
     const forbidden = [] as string[];
     const alphabet = '0123456789'.split('');
@@ -515,7 +515,7 @@ export async function main(ns: NS) {
   }
 
   async function AuthenticateWithOpenWebAccessPoint(hostname: string) {
-    const details = ns.dnet.getServerAuthDetails(hostname);
+    const details = ns.dnet.getServerDetails(hostname);
 
     let pass = ns.pid.toString().padStart(details.passwordLength, '0');
 
