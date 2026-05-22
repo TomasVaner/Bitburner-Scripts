@@ -43,6 +43,7 @@ export async function main(ns: NS) {
     'Spiralize Matrix': true,
     'Sanitize Parentheses in Expression': true,
     'Total Ways to Sum II': true,
+    'Shortest Path in a Grid': true,
     //'Find All Valid Math Expressions': true,
   };
 

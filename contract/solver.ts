@@ -34,6 +34,7 @@ const known_types: Partial<Record<CodingContractName, [boolean, (d: any, l?: Log
   'Spiralize Matrix': [true, SpiralizeMatrix],
   'Sanitize Parentheses in Expression': [true, SanitizeParenthesesInExpression],
   'Total Ways to Sum II': [true, TotalWaysToSumII],
+  'Shortest Path in a Grid': [true, ShortestPathInAGrid],
   //'Find All Valid Math Expressions': [true, FindAllValidMathExpressions],
 };
 
@@ -817,6 +818,114 @@ export function TotalWaysToSumII([num, array]: [number, number[]], logger?: Logg
   known_ways[hash] = ways;
   logger?.Log(`TotalWaysToSumII(${num}, ${JSON.stringify(array)}) = ${ways}`);
   return ways;
+}
+
+export function ShortestPathInAGrid(grid: number[][], logger?: Logger) {
+  /*type: Shortest Path in a Grid data: [[0,0,0,1,0,0,0,0,1,0,1],[1,1,1,0,0,0,0,0,1,1,0],[0,0,0,0,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,1,1,1,0],[0,1,1,0,1,0,0,0,1,0,0],[0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,1,0,0,0,0,0],[0,1,0,0,0,0,1,0,0,0,1],[1,0,0,0,1,0,0,0,0,0,1],[1,1,0,0,0,0,0,1,0,0,0],[1,1,0,0,0,0,0,0,0,1,0],[0,1,0,0,0,0,0,0,0,0,0]], desc: You are located in the top-left corner of the following grid:
+
+     [[0,0,0,1,0,0,0,0,1,0,1],
+     [1,1,1,0,0,0,0,0,1,1,0],
+     [0,0,0,0,0,0,0,1,0,0,0],
+     [0,0,0,0,0,0,0,1,1,1,0],
+     [0,1,1,0,1,0,0,0,1,0,0],
+     [0,0,0,0,0,0,0,0,0,0,0],
+     [0,0,1,0,0,1,0,0,0,0,0],
+     [0,1,0,0,0,0,1,0,0,0,1],
+     [1,0,0,0,1,0,0,0,0,0,1],
+     [1,1,0,0,0,0,0,1,0,0,0],
+     [1,1,0,0,0,0,0,0,0,1,0],
+     [0,1,0,0,0,0,0,0,0,0,0]]
+
+    You are trying to find the shortest path to the bottom-right corner of the grid, but there are obstacles on the grid that you cannot move onto. These obstacles are denoted by '1', while empty spaces are denoted by 0.
+
+    Determine the shortest path from start to finish, if one exists. The answer should be given as a string of UDLR characters, indicating the moves along the path
+
+    NOTE: If there are multiple equally short paths, any of them is accepted as answer. If there is no path, the answer should be an empty string.
+    NOTE: The data returned for this contract is an 2D array of numbers representing the grid.
+
+    Examples:
+
+       [[0,1,0,0,0],
+        [0,0,0,1,0]]
+
+    Answer: 'DRRURRD'
+
+       [[0,1],
+        [1,0]]
+
+    Answer: "", diff: 7*/
+
+  const shifts = [
+    { dir: 'R', d: [0, 1] },
+    { dir: 'D', d: [1, 0] },
+    { dir: 'L', d: [0, -1] },
+    { dir: 'U', d: [-1, 0] },
+  ];
+
+  const size = [grid.length, grid[0].length];
+  const next_crawl = [{ y: size[0] - 1, x: size[1] - 1, distance: 0 }];
+  const shortest_path: number[][] = [];
+  for (let ind_y = 0; ind_y < size[0]; ind_y++) {
+    shortest_path.push([]);
+    for (let ind_x = 0; ind_x < size[1]; ind_x++) {
+      shortest_path[ind_y].push(Infinity);
+    }
+  }
+  while (next_crawl.length > 0) {
+    const cur_pos = next_crawl.shift();
+    if (cur_pos === undefined) break;
+
+    shortest_path[cur_pos.y][cur_pos.x] = cur_pos.distance;
+    for (const {
+      d: [dx, dy],
+    } of shifts) {
+      if (
+        cur_pos.y + dy >= 0 &&
+        cur_pos.y + dy < size[0] &&
+        cur_pos.x + dx >= 0 &&
+        cur_pos.x + dx < size[1] &&
+        grid[cur_pos.y + dy][cur_pos.x + dx] === 0
+      ) {
+        if (cur_pos.distance + 1 < shortest_path[cur_pos.y + dy][cur_pos.x + dx]) {
+          next_crawl.push({ y: cur_pos.y + dy, x: cur_pos.x + dx, distance: cur_pos.distance + 1 });
+        }
+      }
+    }
+
+    if (shortest_path[0][0] !== Infinity) break;
+  }
+
+  let path = '';
+  if (shortest_path[0][0] === Infinity) {
+    logger?.Log(`Could not find the first step`);
+    return path;
+  }
+
+  logger?.Log(`${JSON.stringify(grid)} -> ${JSON.stringify(shortest_path)}`);
+
+  let cur_pos = { x: 0, y: 0, distance: shortest_path[0][0] };
+  while (cur_pos.y != size[0] - 1 || cur_pos.x != size[1] - 1) {
+    let found_next_step = false;
+    for (const shift of shifts) {
+      if (
+        cur_pos.y + shift.d[0] >= 0 &&
+        cur_pos.y + shift.d[0] < size[0] &&
+        cur_pos.x + shift.d[1] >= 0 &&
+        cur_pos.x + shift.d[1] < size[1] &&
+        shortest_path[cur_pos.y + shift.d[0]][cur_pos.x + shift.d[1]] === cur_pos.distance - 1
+      ) {
+        cur_pos = { x: cur_pos.x + shift.d[1], y: cur_pos.y + shift.d[0], distance: cur_pos.distance - 1 };
+        path = path + shift.dir;
+        found_next_step = true;
+        break;
+      }
+    }
+    if (!found_next_step) {
+      logger?.Log(`Could not find next step`);
+      return '';
+    }
+  }
+  return path;
 }
 
 function UniquePathInAGridII(grid: number[][], logger?: Logger) {
