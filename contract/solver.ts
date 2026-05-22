@@ -35,6 +35,7 @@ const known_types: Partial<Record<CodingContractName, [boolean, (d: any, l?: Log
   'Sanitize Parentheses in Expression': [true, SanitizeParenthesesInExpression],
   'Total Ways to Sum II': [true, TotalWaysToSumII],
   'Shortest Path in a Grid': [true, ShortestPathInAGrid],
+  'Minimum Path Sum in a Triangle': [true, MinimumPathSumInATriangle],
   //'Find All Valid Math Expressions': [true, FindAllValidMathExpressions],
 };
 
@@ -1110,6 +1111,52 @@ export function SanitizeParenthesesInExpression(expr: string, logger?: Logger) {
   ret = ret.sortby((s) => s.length, false);
   ret = ret.filter((s) => s.length == ret[0].length);
   return ret.length ? [...new Set(ret)] : [''];
+}
+
+export function MinimumPathSumInATriangle(triangle: number[][], logger?: Logger) {
+  /*type: Minimum Path Sum in a Triangle data: [[5],[3,2],[6,1,2],[8,4,8,7],[8,4,1,4,8],[2,8,1,5,8,8],[1,9,9,8,2,4,3],[1,7,6,6,1,6,8,3],[1,3,4,2,4,9,1,2,2]],
+  desc: Given a triangle, find the minimum path sum from top to bottom. In each step of the path, you may only move to adjacent numbers in the row below. The triangle is represented as a 2D array of numbers:
+
+  [
+          [5],
+         [3,2],
+        [6,1,2],
+       [8,4,8,7],
+      [8,4,1,4,8],
+     [2,8,1,5,8,8],
+    [1,9,9,8,2,4,3],
+   [1,7,6,6,1,6,8,3],
+  [1,3,4,2,4,9,1,2,2]
+  ]
+
+  Example: If you are given the following triangle:
+
+  [
+      [2],
+     [3,4],
+    [6,5,7],
+   [4,1,8,3]
+  ]
+
+  The minimum path sum is 11 (2 -> 3 -> 5 -> 1)., diff: 5*/
+  function traverse_triangle(path: number[], last_step: number): [number, number[]] {
+    const current_line = path.length;
+    if (current_line == triangle.length) return [0, []];
+
+    let min_path = [Infinity, []] as [number, number[]];
+
+    for (let step = last_step; step <= last_step + 1 && step < triangle[current_line].length; step++) {
+      const step_value = triangle[current_line][step];
+      const sub_path = traverse_triangle([...path, triangle[current_line][step]], step);
+      if (sub_path[0] + step_value < min_path[0]) min_path = [sub_path[0] + step_value, [step_value, ...sub_path[1]]];
+    }
+
+    return min_path;
+  }
+
+  const ret = traverse_triangle([], 0);
+  logger?.Log(`${JSON.stringify(triangle)} -> ${JSON.stringify(ret)}`);
+  return ret[0];
 }
 
 export function autocomplete(data: AutocompleteData, args: ScriptArg[]) {

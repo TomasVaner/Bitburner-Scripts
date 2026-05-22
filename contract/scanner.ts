@@ -44,6 +44,7 @@ export async function main(ns: NS) {
     'Sanitize Parentheses in Expression': true,
     'Total Ways to Sum II': true,
     'Shortest Path in a Grid': true,
+    'Minimum Path Sum in a Triangle': true,
     //'Find All Valid Math Expressions': true,
   };
 
