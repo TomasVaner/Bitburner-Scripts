@@ -31,7 +31,7 @@ if (!Array.prototype.sum) {
   };
 }
 
-if (!Array.prototype.sum) {
+if (!Array.prototype.sortby) {
   Array.prototype.sortby = function sortby<T>(
     this: T[],
     mod = ((item: T) => item) as (item: T) => number,

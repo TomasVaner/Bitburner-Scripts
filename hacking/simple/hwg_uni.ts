@@ -1,31 +1,34 @@
 import { NSLogger } from '@/utility/log';
 import { HackOperationResultPacket, HackOperation } from '@/utility/network_packets';
-import { ConvertToFlagsData, Hacking } from '@/utility/flags';
+import { ConvertToFlagsData, GetLastArgument, Hacking } from '@/utility/flags';
 
-const flags_struct: Hacking.HackArgs & Hacking.HackFinishAtArgs & Hacking.HackRunAtArgs & Hacking.HackDelayUniArgs = {
-  target: '',
-  finish_at: -1,
-  process_time: -1,
-  run_at: -1,
-  delay: -1,
-  log_file: '',
-  port_index: PortNumbers.multi_hack_in,
-  operation: '' as HackOperation,
-  log_prefix: '',
-};
+export const flags_struct: Hacking.HackArgs & Hacking.HackFinishAtArgs & Hacking.HackRunAtArgs & Hacking.HackDelayArgs =
+  {
+    compute_server: 'home',
+    target: '',
+    finish_at: -1,
+    process_time: -1,
+    run_at: -1,
+    delay: -1,
+    log_file: '',
+    port_index: -1,
+    operation: '' as HackOperation,
+    log_prefix: '',
+  };
 const flags_data = ConvertToFlagsData(flags_struct);
 
 export async function main(ns: NS) {
   const flag = ns.flags(flags_data) as typeof flags_struct;
-  const target = flag.target as string;
 
-  const logger = new Logger(ns, {
-    log_file: flag.log_file ? flag.log_file : undefined,
+  const logger = new NSLogger(ns, {
+    log_file: flag.log_file,
     clean: false,
-    extra_name: target,
+    extra_name: flag.target,
+    create_file: false,
   });
   logger.prefix = `${ns.pid}${flag.log_prefix}: `;
   logger.include_timestamp = true;
+  logger.logger_enabled = flag.log_file.length > 0;
   logger.Log(`args: ${JSON.stringify(ns.args)}`);
   if (flag.operation.length === 0) {
     throw 'Operation is not set!';
@@ -40,19 +43,12 @@ export async function main(ns: NS) {
     if (flag.finish_at != -1 && flag.process_time != -1) {
       flag.run_at = flag.finish_at - flag.process_time;
       logger.Log(
-        `Now: ${ns.format.time(performance.now(), true)} Finish at: ${ns.format.time(
-          flag.finish_at,
-          true,
-        )} process_time: ${ns.format.time(flag.process_time, true)} => run_at: ${ns.format.time(flag.run_at, true)}`,
-      );
-      logger.Log(
         `Now: ${performance.now()} Finish at: ${flag.finish_at} process_time: ${flag.process_time} => run_at: ${
           flag.run_at
         }`,
       );
     }
   } else {
-    logger.Log(`Now: ${ns.format.time(performance.now(), true)} Run at: ${ns.format.time(flag.run_at, true)}`);
     logger.Log(`Now: ${performance.now()} Run at: ${flag.run_at}`);
   }
 
@@ -63,24 +59,32 @@ export async function main(ns: NS) {
     }
   }
   if (flag.delay == -1) flag.delay = flag.run_at - performance.now();
-  logger.Log(
-    `Running ${flag.operation} on ${target} in ${flag.delay.toFixed(3)}. Now is ${performance.now().toFixed(2)}`,
-  );
+  logger.Log(`Running ${flag.operation} on ${flag.target} in ${flag.delay}. Now is ${performance.now()}`);
   flag.delay = Math.max(0, flag.delay);
 
-  const result = await ns[flag.operation](target, { additionalMsec: flag.delay });
+  const result = await ns[flag.operation](flag.target, { additionalMsec: flag.delay });
+
+  ns.atExit(() => {
+    if (flag.port_index != -1) {
+      const return_data = new HackOperationResultPacket(
+        flag.compute_server,
+        flag.target,
+        result,
+        flag.operation,
+        ns.pid,
+      );
+      ns.tryWritePort(flag.port_index, JSON.stringify(return_data));
+    }
+  });
+
   get_process_log();
 
-  logger.Log(`operation ${flag.operation} ended on ${target}. Result: ${result}`);
-  const return_data = new HackOperationResultPacket(target, result, flag.operation, ns.pid);
-  //ns.tryWritePort(port_index, JSON.stringify(return_data));
+  logger.Log(`operation ${flag.operation} ended on ${flag.target}. Result: ${result}`);
 }
 
 export function autocomplete(data: AutocompleteData, args: ScriptArg[]) {
-  if (args.at(-1) == '--target' || (args.at(-2) == '--target' && !data.command.endsWith(' '))) return [...data.servers];
-
-  if (args.at(-1) == '--operation' || (args.at(-2) == '--operation' && !data.command.endsWith(' ')))
-    return ['hack', 'grow', 'weaken'];
+  if (GetLastArgument(data, args) == '--target') return [...data.servers];
+  if (GetLastArgument(data, args) == '--operation') return ['hack', 'grow', 'weaken'];
 
   data.flags(flags_data);
   return ['--tail'];

@@ -72,13 +72,15 @@ export class ContractSolveResultPacket extends NetworkPacket {
 
 export type HackOperation = 'hack' | 'grow' | 'weaken';
 export class HackOperationResultPacket extends NetworkPacket {
-  constructor(target: string, result: number, operation: HackOperation, pid: number) {
+  constructor(compute_server: string, target: string, result: number, operation: HackOperation, pid: number) {
     super(PacketType.hack_operation_result);
+    this.compute_server = compute_server;
     this.target = target;
     this.result = result;
     this.operation = operation;
     this.pid = pid;
   }
+  compute_server: string;
   target: string;
   operation: HackOperation;
   result: number;

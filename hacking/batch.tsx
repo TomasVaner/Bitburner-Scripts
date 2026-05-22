@@ -3,11 +3,8 @@ import { NSLogger } from '@/utility/log';
 import { GetAllServers, GetFreeRam, GetRoute, Weight } from '@/utility/scanner';
 import { ConvertArgsToFlags, ConvertToArgs, ConvertToFlagsData, Hacking } from '@/utility/flags';
 import { ProgressBar } from '@/ui/progress_bar';
-import { main as hack_main } from './simple/hack';
-import { main as grow_main } from './simple/grow';
-import { main as weak_main } from './simple/weaken';
-
-type Unpacked<T> = T extends (infer U)[] ? U : T;
+import { main as hwg_main, flags_struct as hacking_flags_struct } from '@/hacking/simple/hwg_uni';
+import '@/utility/extensions/array';
 
 const flag_struct = {
   buy_clouds: false,
@@ -18,13 +15,13 @@ const flag_struct = {
   single_batch: false,
   debug: false,
   hgw: false,
-  sync_interval: 150,
+  sync_interval: 200,
 };
 const flags_data = ConvertToFlagsData(flag_struct);
 
 export async function main(ns: NS) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const pre_load_scripts = [hack_main, grow_main, weak_main];
+  const pre_load_scripts = [hwg_main];
   const flag = ns.flags(flags_data) as typeof flag_struct;
   ns.clearPort(ns.pid);
   {
@@ -46,9 +43,9 @@ export async function main(ns: NS) {
   logger.Log('Started hacking');
   ns.clearLog();
 
-  const hackRam = ns.getScriptRam(ScriptNames.hack_script);
-  const growRam = ns.getScriptRam(ScriptNames.grow_script);
-  const weakenRam = ns.getScriptRam(ScriptNames.weaken_script);
+  const hackRam = ns.getScriptRam(ScriptNames.hwg_script) + ns.getFunctionRamCost('hack');
+  const growRam = ns.getScriptRam(ScriptNames.hwg_script) + ns.getFunctionRamCost('grow');
+  const weakenRam = ns.getScriptRam(ScriptNames.hwg_script) + ns.getFunctionRamCost('weaken');
 
   const port_hacks = {
     'BruteSSH.exe': ns.brutessh,
@@ -185,17 +182,7 @@ export async function main(ns: NS) {
       const processes = ns.ps(cs.hostname);
       for (const p of processes) {
         if (HackScripts.some((s) => s.endsWith(p.filename))) {
-          const template: Hacking.HackDelayArgs & Hacking.HackFinishAtArgs & Hacking.HackRunAtArgs = {
-            delay: 0,
-            log_file: '',
-            log_prefix: '',
-            port_index: -1,
-            target: '',
-            finish_at: -1,
-            process_time: -1,
-            run_at: -1,
-          };
-          const p_args = ConvertArgsToFlags(p.args, template);
+          const p_args = ConvertArgsToFlags(p.args, hacking_flags_struct);
           running_scipts.push({
             process: p,
             parsed_args: p_args,
@@ -217,14 +204,7 @@ export async function main(ns: NS) {
     });
 
     compute_servers = compute_servers.filter(
-      (cs) =>
-        cs.freeRam > hackable_servers[0].ram &&
-        !(
-          ns.scriptRunning(ScriptNames.hack_script, cs.hostname) ||
-          ns.scriptRunning(ScriptNames.grow_script, cs.hostname) ||
-          ns.scriptRunning(ScriptNames.weaken_script, cs.hostname) ||
-          ns.scriptRunning(ScriptNames.hwg_script, cs.hostname)
-        ),
+      (cs) => cs.freeRam > hackable_servers[0].ram && !ns.scriptRunning(ScriptNames.hwg_script, cs.hostname),
     );
 
     if (compute_servers.length == 0) {
@@ -271,23 +251,26 @@ export async function main(ns: NS) {
             b_ind == availableBatches - 1 && (cs_ind == flag.limit_servers - 1 || cs_ind == compute_servers.length - 1);
 
           const common_args = {
+            compute_server: cs.hostname,
             target: target_server.hostname,
             port_index: -1,
             log_file: flag.debug ? logger.log_file : '',
             log_prefix: `batch:${started_batches}`,
+            finish_at: performance.now() + target_server.time.weaken + started_batches * flag.delay,
           };
 
           if (target_server.threads.hack > 0) {
-            const p_args: Hacking.HackDelayArgs & { process_time: number } = {
+            const p_args: Hacking.HackDelayArgs & Hacking.HackFinishAtArgs = {
               ...common_args,
+              operation: 'hack',
               process_time: target_server.time.hack,
               delay: target_server.time.weaken - target_server.time.hack + started_batches * flag.delay,
               log_prefix: `  hack batch:${started_batches}`,
             };
             const pid = ns.exec(
-              ScriptNames.hack_script,
+              ScriptNames.hwg_script,
               cs.hostname,
-              target_server.threads.hack,
+              { threads: target_server.threads.hack, temporary: true },
               ...ConvertToArgs(p_args),
             );
             if (pid == 0) throw `Could not start hack`;
@@ -297,16 +280,17 @@ export async function main(ns: NS) {
             if (last_process) {
               common_args.port_index = ns.pid;
             }
-            const p_args: Hacking.HackDelayArgs & { process_time: number } = {
+            const p_args: Hacking.HackDelayArgs & Hacking.HackFinishAtArgs = {
               ...common_args,
+              operation: 'weaken',
               process_time: target_server.time.weaken,
               delay: started_batches * flag.delay,
               log_prefix: ` hweak batch:${started_batches}`,
             };
             const pid = ns.exec(
-              ScriptNames.weaken_script,
+              ScriptNames.hwg_script,
               cs.hostname,
-              target_server.threads.weaken_hack,
+              { threads: target_server.threads.weaken_hack, temporary: true },
               ...ConvertToArgs(p_args),
             );
             if (pid == 0) throw `Could not start weaken after hack`;
@@ -314,16 +298,17 @@ export async function main(ns: NS) {
           }
 
           if (target_server.threads.grow > 0) {
-            const p_args: Hacking.HackDelayArgs & { process_time: number } = {
+            const p_args: Hacking.HackDelayArgs & Hacking.HackFinishAtArgs = {
               ...common_args,
+              operation: 'grow',
               process_time: target_server.time.grow,
               delay: target_server.time.weaken - target_server.time.grow + started_batches * flag.delay,
               log_prefix: `  grow batch:${started_batches}`,
             };
             const pid = ns.exec(
-              ScriptNames.grow_script,
+              ScriptNames.hwg_script,
               cs.hostname,
-              target_server.threads.grow,
+              { threads: target_server.threads.grow, temporary: true },
               ...ConvertToArgs(p_args),
             );
             if (pid == 0) throw `Could not start grow`;
@@ -332,16 +317,17 @@ export async function main(ns: NS) {
             if (last_batch) {
               common_args.port_index = ns.pid;
             }
-            const p_args: Hacking.HackDelayArgs & { process_time: number } = {
+            const p_args: Hacking.HackDelayArgs & Hacking.HackFinishAtArgs = {
               ...common_args,
+              operation: 'weaken',
               process_time: target_server.time.weaken,
               delay: started_batches * flag.delay,
               log_prefix: ` gweak batch:${started_batches}`,
             };
             const pid = ns.exec(
-              ScriptNames.weaken_script,
+              ScriptNames.hwg_script,
               cs.hostname,
-              target_server.threads.weaken_grow,
+              { threads: target_server.threads.weaken_grow, temporary: true },
               ...ConvertToArgs(p_args),
             );
             if (pid == 0) throw `Could not start weaken after grow`;

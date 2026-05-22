@@ -15,9 +15,6 @@ export const ScriptNames = {
   induce_server_migration: '/scripts/darknet/simple/induceServerMigration.js',
   logger: '/scripts/utility/log.js',
   network_packets: '/scripts/utility/network_packets.js',
-  hack_script: '/scripts/hacking/simple/hack.js',
-  grow_script: '/scripts/hacking/simple/grow.js',
-  weaken_script: '/scripts/hacking/simple/weaken.js',
   hwg_script: '/scripts/hacking/simple/hwg_uni.js',
   flags: '/scripts/utility/flags.js',
   memory_share: '/scripts/memory_share/share.js',
@@ -40,9 +37,6 @@ export const ProberScripts = [
 ];
 
 export const HackScripts = [
-  ScriptNames.hack_script,
-  ScriptNames.grow_script,
-  ScriptNames.weaken_script,
   ScriptNames.hwg_script,
   ScriptNames.logger,
   ScriptNames.constants,

@@ -84,6 +84,10 @@ export function ConvertArgsToFlags<T extends object>(args: ScriptArg[], template
   return obj;
 }
 
+export function GetLastArgument(data: AutocompleteData, args: ScriptArg[]) {
+  return data.command.endsWith(' ') ? args.at(-1) : args.at(-2);
+}
+
 export namespace Contract {
   export namespace Solver {
     export type TypeSolverArgs = {
@@ -102,6 +106,7 @@ export namespace Hacking {
     log_file: string;
     port_index: number;
     log_prefix: string;
+    compute_server: string;
   };
 
   export type HackFinishAtArgs = HackArgs & {
@@ -115,9 +120,6 @@ export namespace Hacking {
 
   export type HackDelayArgs = HackArgs & {
     delay: number;
-  };
-
-  export type HackDelayUniArgs = HackDelayArgs & {
     operation: HackOperation;
   };
 }
