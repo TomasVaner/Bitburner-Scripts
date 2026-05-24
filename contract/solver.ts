@@ -16,7 +16,7 @@ const known_ways: {
   [key: string]: number;
 } = {};
 
-const known_types: Partial<Record<CodingContractName, [boolean, (d: any, l?: Logger) => any]>> = {
+const known_types: Partial<Record<CodingContractName, [boolean, (d: any, l: Logger) => any]>> = {
   'Subarray with Maximum Sum': [false, SubarrayWithMaximumSum],
   'Algorithmic Stock Trader I': [false, AlgorithmicStockTraderI],
   'Find Largest Prime Factor': [false, FindLargestPrimeFactor],
@@ -130,7 +130,7 @@ export async function main(ns: NS) {
     ns.rm(flag.filename, flag.hostname);
   }
 }
-function SubarrayWithMaximumSum(data: number[], logger?: Logger) {
+function SubarrayWithMaximumSum(data: number[], logger: Logger) {
   /*{"type":"Subarray with Maximum Sum",
     "data":[6,-1,0,6,6,10,-6,7,5,-8,-6,9,6,3,-1,-7,6,-3,6,7,-10,8],
     "description":"Given the following integer array, find the contiguous subarray 
@@ -162,7 +162,7 @@ function SubarrayWithMaximumSum(data: number[], logger?: Logger) {
   return max_sum;
 }
 
-function AlgorithmicStockTraderI(data: number[], logger?: Logger) {
+function AlgorithmicStockTraderI(data: number[], logger: Logger) {
   /*{ "type": "Algorithmic Stock Trader I", 
     "data": [133, 12, 166, 146, 106, 37, 82, 126, 89, 155, 123, 81, 122], 
     "description": "You are given the following array of stock prices (which are numbers) 
@@ -191,7 +191,7 @@ function CheckPrime(num: number) {
   return !primes.slice(0, p_ind_sqrt + 1).some((p) => num % p == 0);
 }
 
-function FindLargestPrimeFactor(data: number, logger?: Logger) {
+function FindLargestPrimeFactor(data: number, logger: Logger) {
   let max_prime = 1;
   const prime_divisors = [];
 
@@ -205,7 +205,7 @@ function FindLargestPrimeFactor(data: number, logger?: Logger) {
       while (data % div == 0) {
         data /= div;
       }
-      logger?.Log(`Data after division by ${div}: ${data}`);
+      logger.Log(`Data after division by ${div}: ${data}`);
       return true;
     }
     return false;
@@ -230,11 +230,11 @@ function FindLargestPrimeFactor(data: number, logger?: Logger) {
   }
   if (data > 1) max_prime = data;
 
-  logger?.Log(`${max_prime}, divisors: ${JSON.stringify(prime_divisors)}, last prime: ${primes.at(-1)}`);
+  logger.Log(`${max_prime}, divisors: ${JSON.stringify(prime_divisors)}, last prime: ${primes.at(-1)}`);
   return max_prime;
 }
 
-function EncryptionICaesarCipher([text, shift]: [string, number], logger?: Logger) {
+function EncryptionICaesarCipher([text, shift]: [string, number], logger: Logger) {
   /*{"type":"Encryption I: Caesar Cipher",
     "data":["DEBUG FLASH LOGIN VIRUS MODEM",19],
     "description":"Caesar cipher is one of the simplest encryption technique. 
@@ -258,7 +258,7 @@ function EncryptionICaesarCipher([text, shift]: [string, number], logger?: Logge
     }
   }
 
-  logger?.Log(`${text} -> ${cipher} (${shift})`);
+  logger.Log(`${text} -> ${cipher} (${shift})`);
 
   return cipher;
 }
@@ -292,7 +292,7 @@ function Partitions(n: number): number {
   }
 }
 
-function TotalWaysToSum(data: number, logger?: Logger) {
+function TotalWaysToSum(data: number, logger: Logger) {
   /*{"type":"Total Ways to Sum",
     "data":69,
     "description":
@@ -310,11 +310,11 @@ function TotalWaysToSum(data: number, logger?: Logger) {
     }*/
   const partitions = Partitions(data);
 
-  logger?.Log(`${data} -> ${partitions - 1}`);
+  logger.Log(`${data} -> ${partitions - 1}`);
   return partitions - 1;
 }
 
-function LargestRectangleInAMatrix(data: number[][], logger?: Logger) {
+function LargestRectangleInAMatrix(data: number[][], logger: Logger) {
   /*{ "type": "Largest Rectangle in a Matrix", 
     "data": [[0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0], [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1], [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], 
     "description": "You are given a binary matrix consisting only of 0s and 1s:
@@ -389,7 +389,7 @@ function LargestRectangleInAMatrix(data: number[][], logger?: Logger) {
     }
   }
 
-  logger?.Log(
+  logger.Log(
     `${data.reduce((s, r) => s + '\n' + JSON.stringify(r), '')} -> ${JSON.stringify([
       [max_streak.rf, max_streak.cf],
       [max_streak.rt, max_streak.ct],
@@ -402,7 +402,7 @@ function LargestRectangleInAMatrix(data: number[][], logger?: Logger) {
   ];
 }
 
-function ArrayJumpingGame(data: number[], logger?: Logger) {
+function ArrayJumpingGame(data: number[], logger: Logger) {
   /*{"type":"Array Jumping Game",
     "data":[7,0,1,0,6,10,10,0,0,0,6,0,10,4,0,0,10],
     "description":"You are given the following array of integers:
@@ -419,12 +419,12 @@ function ArrayJumpingGame(data: number[], logger?: Logger) {
     max_distance = Math.max(ind + data[ind], max_distance);
   }
 
-  logger?.Log(`Hopped to ${max_distance}/${data.length}: ${data}`);
+  logger.Log(`Hopped to ${max_distance}/${data.length}: ${data}`);
 
   return max_distance >= data.length - 1 ? 1 : 0;
 }
 
-function TotalNumberOfPrimes([from, to]: [number, number], logger?: Logger) {
+function TotalNumberOfPrimes([from, to]: [number, number], logger: Logger) {
   /*{"type":"Total Number of Primes",
     "data":[1203909,1547817],
     "description":"You are given two random non-negative integers: 1203909,1547817.
@@ -455,7 +455,7 @@ function TotalNumberOfPrimes([from, to]: [number, number], logger?: Logger) {
     }
   }
 
-  logger?.Log(
+  logger.Log(
     `Counted ${prime_count}/${primes.length} - [${p_ind_f}, ${p_ind_t - 1}] - [${primes[p_ind_f]}, ${
       primes[p_ind_t - 1]
     }]: [${[from, to]}]`,
@@ -463,8 +463,8 @@ function TotalNumberOfPrimes([from, to]: [number, number], logger?: Logger) {
   return prime_count;
 }
 
-function SquareRoot(num: bigint, logger?: Logger) {
-  logger?.Log(`Number: ${num}`);
+function SquareRoot(num: bigint, logger: Logger) {
+  logger.Log(`Number: ${num}`);
 
   function HeronMethod(n: bigint, estimate: bigint) {
     let i = 0;
@@ -476,7 +476,7 @@ function SquareRoot(num: bigint, logger?: Logger) {
 
       ++i;
       const diff = Number(x - x_);
-      logger?.Log(`${i}: diff if ${diff}`);
+      logger.Log(`${i}: diff if ${diff}`);
     } while (x != x_);
 
     return x;
@@ -494,13 +494,13 @@ function SquareRoot(num: bigint, logger?: Logger) {
 
   let result = HeronMethod(num, estimate);
 
-  logger?.Log(`Result: ${result}`);
+  logger.Log(`Result: ${result}`);
 
   if (result * result != num) {
-    logger?.Log(
+    logger.Log(
       `result_diff /result-1iff: ${Number(result * result - num) / Number((result - 1n) * (result - 1n) - num)}`,
     );
-    logger?.Log(
+    logger.Log(
       `result_diff /result+1iff: ${Number(result * result - num) / Number((result + 1n) * (result + 1n) - num)}`,
     );
   }
@@ -508,16 +508,16 @@ function SquareRoot(num: bigint, logger?: Logger) {
   const ratio = Math.abs(Number(result * result - num) / Number((result + 1n) * (result + 1n) - num));
 
   if (num - result * result > (result + 1n) * (result + 1n) - num) {
-    logger?.Log('Increasing the result by 1');
+    logger.Log('Increasing the result by 1');
     ++result;
   }
 
-  logger?.Log(`Ratio: ${ratio}`);
+  logger.Log(`Ratio: ${ratio}`);
 
   return result;
 }
 
-function HammingCodesIntegerToEncodedBinary(num: number, logger?: Logger) {
+export function HammingCodesIntegerToEncodedBinary(num: number, logger: Logger) {
   /*type: HammingCodes: Integer to Encoded Binary data: 6221, desc: You are given the following decimal value: 
     6221 
   
@@ -587,12 +587,12 @@ function HammingCodesIntegerToEncodedBinary(num: number, logger?: Logger) {
     }
   }
 
-  logger?.Log(`Number: ${num}, Code: ${code}`);
+  logger.Log(`Number: ${num}, Code: ${code}`);
 
   return code.join('');
 }
 
-function CompressionIRLECompression(data: string, logger?: Logger) {
+function CompressionIRLECompression(data: string, logger: Logger) {
   /*type: Compression I: RLE Compression 
     data: FFFFFHl5HHkkIIyyyyyyyyTTTTTTQQQQQ2xuuuuuuuuuuuuuunbb666668888888wwffOuDnJJf88, 
     desc: Run-length encoding (RLE) is a data compression technique which encodes data as a series of runs of a repeated single character. Runs are encoded as a length, followed by the character itself. Lengths are encoded as a single ASCII digit; runs of 10 characters or more are encoded by splitting them into multiple runs.
@@ -608,7 +608,7 @@ function CompressionIRLECompression(data: string, logger?: Logger) {
         111112333            ->  511233
         zzzzzzzzzzzzzzzzzzz  ->  9z9z1z  (or 9z8z2z, etc.), diff: 2*/
 
-  function CompressRLE(data: string, logger?: Logger) {
+  function CompressRLE(data: string) {
     const compressed = [] as string[];
     let cur_symbol = '';
     let cur_count = 0;
@@ -629,12 +629,12 @@ function CompressionIRLECompression(data: string, logger?: Logger) {
 
   const compressed = CompressRLE(data);
 
-  logger?.Log(`Data: '${data}', Compress: '${compressed}'`);
+  logger.Log(`Data: '${data}', Compress: '${compressed}'`);
 
   return compressed;
 }
 
-function FindAllValidMathExpressions([data, result]: [string, number], logger?: Logger) {
+export function FindAllValidMathExpressions([data, result]: [string, number], logger: Logger) {
   /*type: Find All Valid Math Expressions
     data: 6306288607,-87, desc: You are given the following string which contains only digits between 0 and 9:
 
@@ -687,11 +687,11 @@ function FindAllValidMathExpressions([data, result]: [string, number], logger?: 
     } else logger?.Log(`Expression [${opers_ind}] ${formula.join('')}=${expr_value}`);
   }
 
-  logger?.Log(`[${data}, ${result}] -> ${ret}`);
+  logger.Log(`['${data}', ${result}] -> ${JSON.stringify(ret)}`);
   return ret;
 }
 
-function GenerateIPAddressesData(data: string, logger?: Logger) {
+function GenerateIPAddressesData(data: string, logger: Logger) {
   /*type: Generate IP Addresses data: 16929246163, desc: Given the following string containing only digits, return an array with all possible valid IP address combinations that can be created from the string:
 
     16929246163
@@ -720,12 +720,12 @@ function GenerateIPAddressesData(data: string, logger?: Logger) {
     ret.push(parts.join('.'));
   }
 
-  logger?.Log(`${data} -> ${ret}`);
+  logger.Log(`${data} -> ${ret}`);
 
   return ret;
 }
 
-function Proper2ColoringOfAGraph([node_count, links]: [number, [number, number][]], logger?: Logger) {
+function Proper2ColoringOfAGraph([node_count, links]: [number, [number, number][]], logger: Logger) {
   /*type: Proper 2-Coloring of a Graph data: 9,1,6,0,5,6,8,3,5,0,2,0,3,2,4,0,1,4,8,0,8,3,4, desc: You are given the following data, representing a graph:
     [9,[[1,6],[0,5],[6,8],[3,5],[0,2],[0,3],[2,4],[0,1],[4,8],[0,8],[3,4]]]
     Note that "graph", as used here, refers to the field of graph theory, and has no relation to statistics or plotting. 
@@ -747,7 +747,7 @@ function Proper2ColoringOfAGraph([node_count, links]: [number, [number, number][
   const visited_nodes = [] as boolean[];
   function colorNode(node: number, color: number) {
     if (ret[node] === undefined) {
-      logger?.Log(`Colored ${node} to ${color}`);
+      logger.Log(`Colored ${node} to ${color}`);
       ret[node] = color;
     }
 
@@ -777,11 +777,11 @@ function Proper2ColoringOfAGraph([node_count, links]: [number, [number, number][
     }
   }
 
-  logger?.Log(`${success ? 'Success!' : 'Unsuccessful'}: ${ret}`);
+  logger.Log(`${success ? 'Success!' : 'Unsuccessful'}: ${ret}`);
   return success ? ret : [];
 }
 
-export function TotalWaysToSumII([num, array]: [number, number[]], logger?: Logger) {
+export function TotalWaysToSumII([num, array]: [number, number[]], logger: Logger) {
   /*Total Ways to Sum II data: [139,[1,2,3,5,9,11,12,13,15,19,21,22]], 
     desc: How many different distinct ways can the number 183 be written as a sum of integers contained in the set:
 
@@ -817,11 +817,11 @@ export function TotalWaysToSumII([num, array]: [number, number[]], logger?: Logg
     ++ways;
   }
   known_ways[hash] = ways;
-  logger?.Log(`TotalWaysToSumII(${num}, ${JSON.stringify(array)}) = ${ways}`);
+  logger.Log(`TotalWaysToSumII(${num}, ${JSON.stringify(array)}) = ${ways}`);
   return ways;
 }
 
-export function ShortestPathInAGrid(grid: number[][], logger?: Logger) {
+export function ShortestPathInAGrid(grid: number[][], logger: Logger) {
   /*type: Shortest Path in a Grid data: [[0,0,0,1,0,0,0,0,1,0,1],[1,1,1,0,0,0,0,0,1,1,0],[0,0,0,0,0,0,0,1,0,0,0],[0,0,0,0,0,0,0,1,1,1,0],[0,1,1,0,1,0,0,0,1,0,0],[0,0,0,0,0,0,0,0,0,0,0],[0,0,1,0,0,1,0,0,0,0,0],[0,1,0,0,0,0,1,0,0,0,1],[1,0,0,0,1,0,0,0,0,0,1],[1,1,0,0,0,0,0,1,0,0,0],[1,1,0,0,0,0,0,0,0,1,0],[0,1,0,0,0,0,0,0,0,0,0]], desc: You are located in the top-left corner of the following grid:
 
      [[0,0,0,1,0,0,0,0,1,0,1],
@@ -898,11 +898,11 @@ export function ShortestPathInAGrid(grid: number[][], logger?: Logger) {
 
   let path = '';
   if (shortest_path[0][0] === Infinity) {
-    logger?.Log(`Could not find the first step`);
+    logger.Log(`Could not find the first step`);
     return path;
   }
 
-  logger?.Log(`${JSON.stringify(grid)} -> ${JSON.stringify(shortest_path)}`);
+  logger.Log(`${JSON.stringify(grid)} -> ${JSON.stringify(shortest_path)}`);
 
   let cur_pos = { x: 0, y: 0, distance: shortest_path[0][0] };
   while (cur_pos.y != size[0] - 1 || cur_pos.x != size[1] - 1) {
@@ -922,14 +922,14 @@ export function ShortestPathInAGrid(grid: number[][], logger?: Logger) {
       }
     }
     if (!found_next_step) {
-      logger?.Log(`Could not find next step`);
+      logger.Log(`Could not find next step`);
       return '';
     }
   }
   return path;
 }
 
-function UniquePathInAGridII(grid: number[][], logger?: Logger) {
+function UniquePathInAGridII(grid: number[][], logger: Logger) {
   /*Unique Paths in a Grid II data: [[0,0,0,0],[0,0,1,0],[0,0,0,0],[1,0,0,0]], desc: You are located in the top-left corner of the following grid:
 
     0,0,1,0,0,1,0,0,1,
@@ -961,7 +961,7 @@ function UniquePathInAGridII(grid: number[][], logger?: Logger) {
   return unique_way.at(-1)?.at(-1) ?? 0;
 }
 
-function SpiralizeMatrix(matrix: number[][], logger?: Logger) {
+function SpiralizeMatrix(matrix: number[][], logger: Logger) {
   /*type: Spiralize Matrix data: [[20,35,2,3,4,18,32,36,16,48,30,10,4,17,48],[24,27,9,12,5,47,28,8,28,20,7,22,13,42,24],[33,38,29,47,29,34,21,5,37,34,11,15,34,27,16],[21,31,17,42,4,29,19,40,14,31,15,38,12,9,29],[19,49,25,26,14,40,10,28,15,7,1,32,25,31,3],[46,41,37,9,8,31,3,13,45,45,32,5,19,45,47]], 
     desc: Given the following array of arrays of numbers representing a 2D matrix, return the elements of the matrix as an array in spiral order:
 
@@ -1031,11 +1031,11 @@ function SpiralizeMatrix(matrix: number[][], logger?: Logger) {
     }
     stage = (stage + 1) % 4;
   }
-  logger?.Log(`${JSON.stringify(matrix)} -> [${ret}]`);
+  logger.Log(`${JSON.stringify(matrix)} -> [${ret}]`);
   return ret;
 }
 
-export function SanitizeParenthesesInExpression(expr: string, logger?: Logger) {
+export function SanitizeParenthesesInExpression(expr: string, logger: Logger) {
   /*type: Sanitize Parentheses in Expression data: "())(a()", desc: Given the following string:
 
     ())(a()
@@ -1069,7 +1069,7 @@ export function SanitizeParenthesesInExpression(expr: string, logger?: Logger) {
     count_added: typeof total_count = { [open_brace]: 0, [close_brace]: 0 },
     count_removed: typeof total_count = { [open_brace]: 0, [close_brace]: 0 },
   ) {
-    logger?.Log(`sanitize('${res}', '${expr_left}', ${JSON.stringify(count_added)})`);
+    logger.Log(`sanitize('${res}', '${expr_left}', ${JSON.stringify(count_added)})`);
     if (expr_left.length == 0) {
       return count_added[open_brace] == count_added[close_brace] ? [res] : [];
     }
@@ -1107,13 +1107,13 @@ export function SanitizeParenthesesInExpression(expr: string, logger?: Logger) {
   }
 
   let ret = sanitize('', expr, { [open_brace]: 0, [close_brace]: 0 });
-  logger?.Log(`'${expr}' -> ${JSON.stringify(ret)}`);
+  logger.Log(`'${expr}' -> ${JSON.stringify(ret)}`);
   ret = ret.sortby((s) => s.length, false);
   ret = ret.filter((s) => s.length == ret[0].length);
   return ret.length ? [...new Set(ret)] : [''];
 }
 
-export function MinimumPathSumInATriangle(triangle: number[][], logger?: Logger) {
+export function MinimumPathSumInATriangle(triangle: number[][], logger: Logger) {
   /*type: Minimum Path Sum in a Triangle data: [[5],[3,2],[6,1,2],[8,4,8,7],[8,4,1,4,8],[2,8,1,5,8,8],[1,9,9,8,2,4,3],[1,7,6,6,1,6,8,3],[1,3,4,2,4,9,1,2,2]],
   desc: Given a triangle, find the minimum path sum from top to bottom. In each step of the path, you may only move to adjacent numbers in the row below. The triangle is represented as a 2D array of numbers:
 
@@ -1155,7 +1155,7 @@ export function MinimumPathSumInATriangle(triangle: number[][], logger?: Logger)
   }
 
   const ret = traverse_triangle([], 0);
-  logger?.Log(`${JSON.stringify(triangle)} -> ${JSON.stringify(ret)}`);
+  logger.Log(`${JSON.stringify(triangle)} -> ${JSON.stringify(ret)}`);
   return ret[0];
 }
 
