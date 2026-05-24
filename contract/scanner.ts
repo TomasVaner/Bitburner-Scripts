@@ -37,6 +37,7 @@ export async function main(ns: NS) {
     'Total Ways to Sum': true,
     'Largest Rectangle in a Matrix': true,
     'Array Jumping Game': true,
+    'Array Jumping Game II': true,
     'Total Number of Primes': true,
     'Square Root': true,
     'HammingCodes: Integer to Encoded Binary': true,

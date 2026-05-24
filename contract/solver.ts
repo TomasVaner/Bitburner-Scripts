@@ -28,6 +28,7 @@ const known_types: Partial<Record<CodingContractName, [boolean, (d: any, l: Logg
   'Total Ways to Sum': [false, TotalWaysToSum],
   'Largest Rectangle in a Matrix': [true, LargestRectangleInAMatrix],
   'Array Jumping Game': [true, ArrayJumpingGame],
+  'Array Jumping Game II': [true, ArrayJumpingGameII],
   'Total Number of Primes': [true, TotalNumberOfPrimes],
   'Square Root': [true, SquareRoot],
   'HammingCodes: Integer to Encoded Binary': [true, HammingCodesIntegerToEncodedBinary],
@@ -526,6 +527,31 @@ function ArrayJumpingGame(data: number[], logger: Logger) {
   logger.Log(`Hopped to ${max_distance}/${data.length}: ${data}`);
 
   return max_distance >= data.length - 1 ? 1 : 0;
+}
+
+export function ArrayJumpingGameII(data: number[], logger: Logger) {
+  /*Array Jumping Game II data: [4,4,4,3,2,5,2,5,0], desc: You are given the following array of integers:
+
+  4,4,4,3,2,5,2,5,0
+
+  Each element in the array represents your MAXIMUM jump length at that position. This means that if you are at position i and your maximum jump length is n, you can jump to any position from i to i+n.
+
+  Assuming you are initially positioned at the start of the array, determine the minimum number of jumps to reach the last index.
+
+  If it's impossible to reach the last index, then the answer should be 0., diff: 3*/
+  const can_reach_by = [0];
+  for (let ind = 0; ind < data.length; ++ind) {
+    if (can_reach_by[ind] === undefined) break;
+    for (let jump = 1; jump <= data[ind]; ++jump) {
+      if (ind + jump >= data.length) break;
+      if (can_reach_by[ind + jump] === undefined) can_reach_by[ind + jump] = can_reach_by[ind] + 1;
+    }
+    if (can_reach_by[data.length - 1] !== undefined) break;
+  }
+
+  logger.Log(`[${data}] -> [${can_reach_by}]`);
+
+  return can_reach_by[data.length - 1] ?? 0;
 }
 
 function TotalNumberOfPrimes([from, to]: [number, number], logger: Logger) {
