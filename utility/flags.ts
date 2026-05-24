@@ -85,7 +85,7 @@ export function ConvertArgsToFlags<T extends object>(args: ScriptArg[], template
 }
 
 export function GetLastArgument(data: AutocompleteData, args: ScriptArg[]) {
-  return data.command.endsWith(' ') ? args.at(-1) : args.at(-2);
+  return args.filter((arg) => typeof arg == 'string' && arg?.startsWith('--')).at(-1);
 }
 
 export namespace Contract {
