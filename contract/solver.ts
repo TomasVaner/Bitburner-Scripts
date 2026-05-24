@@ -39,7 +39,7 @@ const known_types: Partial<Record<CodingContractName, [boolean, (d: any, l: Logg
   'Total Ways to Sum II': [true, TotalWaysToSumII],
   'Shortest Path in a Grid': [true, ShortestPathInAGrid],
   'Minimum Path Sum in a Triangle': [true, MinimumPathSumInATriangle],
-  //'Find All Valid Math Expressions': [true, FindAllValidMathExpressions],
+  'Find All Valid Math Expressions': [true, FindAllValidMathExpressions],
 };
 
 export async function main(ns: NS) {
@@ -702,6 +702,7 @@ function CompressionIRLECompression(data: string, logger: Logger) {
 }
 
 export function FindAllValidMathExpressions([data, result]: [string, number], logger: Logger) {
+  const known_formulas: Record<string, string[]> = {};
   /*type: Find All Valid Math Expressions
     data: 6306288607,-87, desc: You are given the following string which contains only digits between 0 and 9:
 
@@ -723,37 +724,53 @@ export function FindAllValidMathExpressions([data, result]: [string, number], lo
 
     Input: digits = "105", target = 5
     Output: ["1*0+5", "10-5"], diff: 10*/
-  const ret = [] as string[];
-  const operations = ['+', '-', '*', undefined];
-  for (let opers_ind = 0; opers_ind < 4 ** (data.length - 1); ++opers_ind) {
-    const operations_inds = opers_ind
-      .toString(4)
-      .padStart(data.length - 1, '0')
-      .split('')
-      .map((s) => Number(s));
-    const operations_used = operations_inds.map((i) => operations[i]);
-    const formula = [data[0]] as (string | undefined)[];
-    for (let iter_ind = 0; iter_ind < data.length - 1; ++iter_ind) {
-      formula.push(operations_used[iter_ind]);
-      if (
-        operations_used[iter_ind] !== undefined &&
-        operations_used[iter_ind + 1] === undefined &&
-        data[iter_ind + 1] == '0' &&
-        iter_ind < data.length - 2
-      ) {
-        break;
-      }
-      formula.push(data[iter_ind + 1]);
-    }
-    if (formula.length != data.length * 2 - 1) continue;
 
-    const expr_value = eval(formula.join(''));
-    if (expr_value == result) {
-      logger?.Log(`-> Expression [${opers_ind}] ${formula.join('')}=${expr_value}`);
-      ret.push(formula.join(''));
-    } else logger?.Log(`Expression [${opers_ind}] ${formula.join('')}=${expr_value}`);
+  function split_expr(expr_left: string, expr_right: string, value_diff: number, last_term: number) {
+    if (expr_right.length == 0) {
+      if (value_diff == 0) {
+        return [''];
+      } else return [];
+    }
+
+    const expr_key = `${expr_right},${value_diff},${last_term}`;
+    if (known_formulas[expr_key]) return known_formulas[expr_key];
+
+    let term = '';
+    const ret: string[] = [];
+    while (expr_right.length > 0) {
+      term += expr_right.slice(0, 1);
+      expr_right = expr_right.slice(1);
+      const term_value = Number(term);
+      if (expr_left == '')
+        ret.push(...split_expr(term, expr_right, value_diff - term_value, term_value).map((r) => term + r));
+      else {
+        ret.push(
+          ...split_expr(expr_left + '+' + term, expr_right, value_diff - term_value, term_value).map(
+            (r) => '+' + term + r,
+          ),
+        );
+        ret.push(
+          ...split_expr(expr_left + '-' + term, expr_right, value_diff + term_value, -term_value).map(
+            (r) => '-' + term + r,
+          ),
+        );
+        ret.push(
+          ...split_expr(
+            expr_left + '*' + term,
+            expr_right,
+            value_diff - (term_value - 1) * last_term,
+            last_term * term_value,
+          ).map((r) => '*' + term + r),
+        );
+      }
+      if (term == '0') break;
+    }
+
+    known_formulas[expr_key] = ret;
+    return ret;
   }
 
+  const ret = split_expr('', data, result, 0);
   logger.Log(`['${data}', ${result}] -> ${JSON.stringify(ret)}`);
   return ret;
 }

@@ -48,7 +48,7 @@ export async function main(ns: NS) {
     'Total Ways to Sum II': true,
     'Shortest Path in a Grid': true,
     'Minimum Path Sum in a Triangle': true,
-    //'Find All Valid Math Expressions': true,
+    'Find All Valid Math Expressions': true,
   };
 
   let waiting_script = [] as number[];
