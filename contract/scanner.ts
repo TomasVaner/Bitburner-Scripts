@@ -44,6 +44,7 @@ export async function main(ns: NS) {
     'Compression I: RLE Compression': true,
     'Generate IP Addresses': true,
     'Proper 2-Coloring of a Graph': true,
+    'Unique Paths in a Grid I': true,
     'Unique Paths in a Grid II': true,
     'Spiralize Matrix': true,
     'Sanitize Parentheses in Expression': true,

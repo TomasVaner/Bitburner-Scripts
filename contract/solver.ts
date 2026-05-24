@@ -35,6 +35,7 @@ const known_types: Partial<Record<CodingContractName, [boolean, (d: any, l: Logg
   'Compression I: RLE Compression': [true, CompressionIRLECompression],
   'Generate IP Addresses': [true, GenerateIPAddressesData],
   'Proper 2-Coloring of a Graph': [true, Proper2ColoringOfAGraph],
+  'Unique Paths in a Grid I': [true, UniquePathInAGridI],
   'Unique Paths in a Grid II': [true, UniquePathInAGridII],
   'Spiralize Matrix': [true, SpiralizeMatrix],
   'Sanitize Parentheses in Expression': [true, SanitizeParenthesesInExpression],
@@ -1074,6 +1075,26 @@ export function ShortestPathInAGrid(grid: number[][], logger: Logger) {
     }
   }
   return path;
+}
+
+export function UniquePathInAGridI([x, y]: [number, number], logger: Logger) {
+  /*type:  'Unique Paths in a Grid I' with data [14,4].
+  Description: You are in a grid with 14 rows and 4 columns, and you are positioned in the top-left corner of that grid. You are trying to reach the bottom-right corner of the grid, but you can only move down or right on each step. Determine how many unique paths there are from start to finish.
+
+  NOTE: The data returned for this contract is an array with the number of rows and columns:
+
+  [14, 4]*/
+
+  let row: number[] = Array(x).fill(1, 0, x);
+  for (let row_ind = 1; row_ind < y; row_ind++) {
+    const next_row = [row[0]];
+    for (let col_ind = 1; col_ind < x; col_ind++) {
+      next_row[col_ind] = row[col_ind] + next_row[col_ind - 1];
+    }
+    row = next_row;
+  }
+
+  return row[x - 1];
 }
 
 function UniquePathInAGridII(grid: number[][], logger: Logger) {
