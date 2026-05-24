@@ -1,6 +1,6 @@
 import { ScriptNames, HackScripts, Strings } from '@/utility/constants';
 import { NSLogger } from '@/utility/log';
-import { GetAllServers, GetFreeRam, GetRoute, Weight } from '@/utility/scanner';
+import { GetAllServers, GetFreeRam, GetRoute, OptimalBatch, Weight } from '@/utility/scanner';
 import { ConvertArgsToFlags, ConvertToArgs, ConvertToFlagsData, Hacking } from '@/utility/flags';
 import { ProgressBar } from '@/ui/progress_bar';
 import { main as hwg_main, flags_struct as hacking_flags_struct } from '@/hacking/simple/hwg_uni';
@@ -69,24 +69,6 @@ export async function main(ns: NS) {
     while (ns.peek(ns.pid) != Strings.null_port_data) {
       const s = ns.readPort(ns.pid);
       logger.Log(`Packet came: ${s}`);
-      /*let packet = JSON.parse(s) as NetworkPacket;
-			if (packet.type == PacketType.hack_operation_result) {
-				let hack_result = packet as HackOperationResultPacket;
-				//logger.Log(`PID ${hack_result.pid} finished`);
-				let processes = running[hack_result.target]?.processes;
-				if (processes === undefined)
-				{
-					logger.Log(`Could not find batches for ${hack_result.target}`);
-					continue;
-				}
-				let process_info = processes.find(p => p.pid == hack_result.pid);
-				logger.Log(`${process_info?.pid} ended. type:${process_info?.type}, time_diff: ${performance.now() - process_info?.end_time} from ${process_info?.end_time}. Return: ${hack_result.result}`)
-				running[hack_result.target].processes = processes.filter(p => p.pid != hack_result.pid);
-				if (running[hack_result.target].processes !== undefined && running[hack_result.target].processes.length == 0) {
-					delete running[hack_result.target];
-					logger.Log(`Finished batches on ${hack_result.target}`);
-				}
-			}*/
     }
     const all_servers = GetAllServers(ns);
     const extra_compute_servers = all_servers.filter(
@@ -169,7 +151,17 @@ export async function main(ns: NS) {
     let hackable_servers = all_servers
       .filter((s) => Weight(ns, s) > 0)
       .map((s) =>
-        OptimalBatch(s, { max_batch_ram, min_batch_ram: max_batch_ram / flag.limit_batches_per_server, hgw: flag.hgw }),
+        OptimalBatch(
+          ns,
+          { hackRam, growRam, weakenRam },
+          s,
+          {
+            max_batch_ram,
+            min_batch_ram: max_batch_ram / flag.limit_batches_per_server,
+            hgw: flag.hgw,
+          },
+          { extra_time },
+        ),
       );
     /*hackable_servers = hackable_servers
 			.filter(s => !(s.hostname in running));*/
@@ -428,126 +420,6 @@ export async function main(ns: NS) {
     } else {
       await ns.sleep(5000);
     }
-  }
-
-  function OptimalBatch(server: string, { max_batch_ram = Infinity, min_batch_ram = 0, cleanup = true, hgw = false }) {
-    const so = ns.getServer(server) as Server;
-
-    let max_batch = {
-      threads: {
-        hack: 0,
-        weaken_hack: 0,
-        grow: 0,
-        weaken_grow: 0,
-      },
-      ram: 0,
-      steal: {
-        total: 0,
-        per_gb: 0,
-      },
-    };
-
-    const formulas = ns.fileExists('Formulas.exe');
-
-    const need_cleanup =
-      cleanup &&
-      ((so.moneyAvailable ?? 0) < (so.moneyMax ?? 0) || (so.hackDifficulty ?? 0) > (so.minDifficulty ?? 100));
-    if (need_cleanup) hgw = false;
-
-    const player = ns.getPlayer();
-
-    const steal_percent = formulas ? ns.formulas.hacking.hackPercent(so, player) : ns.hackAnalyzeChance(server);
-    const steal_amount = (so.moneyMax ?? 0) * steal_percent;
-    const weaken_time = formulas ? ns.formulas.hacking.weakenTime(so, player) : ns.getWeakenTime(server);
-    const batch_time = weaken_time + extra_time;
-
-    function calcHackThreads(hack_threads: number) {
-      const so = {
-        moneyMax: 0,
-        moneyAvailable: 0,
-        hackDifficulty: 0,
-        minDifficulty: 0,
-        ...(ns.getServer(server) as Server),
-      };
-      if (!cleanup) {
-        so.hackDifficulty = so.minDifficulty;
-        so.moneyAvailable = so.moneyMax;
-      }
-      let total_steal = steal_amount * hack_threads;
-      if (total_steal > so.moneyMax) total_steal = so.moneyMax;
-
-      so.hackDifficulty = so.hackDifficulty + ns.hackAnalyzeSecurity(hack_threads);
-      so.moneyAvailable = so.moneyAvailable - total_steal;
-      const hweak_target = so.hackDifficulty - so.minDifficulty;
-
-      const weaken_hack_threads = hgw
-        ? 0
-        : Math.ceil(hweak_target / (formulas ? ns.formulas.hacking.weakenEffect(1) : ns.weakenAnalyze(1)));
-      if (!hgw) {
-        so.hackDifficulty = so.minDifficulty;
-      }
-
-      const grow_threads = formulas
-        ? ns.formulas.hacking.growThreads(so, player, so.moneyMax)
-        : ns.growthAnalyze(server, so.moneyMax / so.moneyAvailable) + 1;
-
-      so.hackDifficulty += ns.growthAnalyzeSecurity(grow_threads);
-      const gweak_target = so.hackDifficulty - so.minDifficulty;
-      const weaken_grow_threads =
-        Math.ceil(gweak_target / (formulas ? ns.formulas.hacking.weakenEffect(1) : ns.weakenAnalyze(1))) + 1;
-
-      const ram =
-        hack_threads * hackRam + grow_threads * growRam + (weaken_hack_threads + weaken_grow_threads) * weakenRam;
-
-      return {
-        threads: {
-          hack: hack_threads,
-          weaken_hack: weaken_hack_threads,
-          grow: grow_threads,
-          weaken_grow: weaken_grow_threads,
-        },
-        ram,
-        steal: {
-          total: total_steal,
-          per_gb: total_steal / ram,
-        },
-      };
-    }
-
-    if (need_cleanup) {
-      max_batch = calcHackThreads(0);
-    } else {
-      for (let hack_threads = 1; hack_threads <= max_batch_ram / (hackRam + growRam + 2 * weakenRam); hack_threads++) {
-        const threads = calcHackThreads(hack_threads);
-        if (threads.ram > max_batch_ram) break;
-        if (threads.steal.total == (so.moneyMax ?? 0)) {
-          if (max_batch.steal.total === 0) max_batch = threads;
-          break;
-        }
-        if (threads.ram < min_batch_ram) continue;
-        if (threads.steal.per_gb > max_batch.steal.per_gb) {
-          max_batch = threads;
-        }
-      }
-    }
-    return {
-      ...max_batch,
-      hostname: server,
-      hack_chance: formulas ? ns.formulas.hacking.hackChance(so, player) : ns.hackAnalyzeChance(server),
-      steal: {
-        ...max_batch.steal,
-        per_gb_per_s: (max_batch.steal.total / max_batch.ram / batch_time) * 1000,
-        per_s: (max_batch.steal.total / batch_time) * 1000,
-      },
-      time: {
-        hack: formulas ? ns.formulas.hacking.hackTime(so, player) : ns.getHackTime(server),
-        grow: formulas ? ns.formulas.hacking.growTime(so, player) : ns.getGrowTime(server),
-        weaken: weaken_time,
-        batch: batch_time,
-      },
-      so: ns.getServer(server) as Server,
-      cleanup: need_cleanup,
-    };
   }
 }
 
