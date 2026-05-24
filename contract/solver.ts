@@ -32,6 +32,7 @@ const known_types: Partial<Record<CodingContractName, [boolean, (d: any, l: Logg
   'Total Number of Primes': [true, TotalNumberOfPrimes],
   'Square Root': [true, SquareRoot],
   'HammingCodes: Integer to Encoded Binary': [true, HammingCodesIntegerToEncodedBinary],
+  'HammingCodes: Encoded Binary to Integer': [true, HammingCodesEncodedBinaryToInteger],
   'Compression I: RLE Compression': [true, CompressionIRLECompression],
   'Generate IP Addresses': [true, GenerateIPAddressesData],
   'Proper 2-Coloring of a Graph': [true, Proper2ColoringOfAGraph],
@@ -722,6 +723,81 @@ export function HammingCodesIntegerToEncodedBinary(num: number, logger: Logger) 
   logger.Log(`Number: ${num}, Code: ${code}`);
 
   return code.join('');
+}
+
+export function HammingCodesEncodedBinaryToInteger(data: string, logger: Logger) {
+  /*'HammingCodes: Encoded Binary to Integer' with data "00100000100000001000110010101100". Description: You are given the following encoded binary string:
+  '00100000100000001000110010101100'
+
+  Decode it as an 'extended Hamming code' and convert it to a decimal value.
+  The binary string may include leading zeroes.
+  An 'extended Hamming code' has an additional parity bit to enhance error detection.
+  A parity bit is inserted at every position N where N is a power of 2, with the additional parity bit at position 0.
+  Parity bits are used to make the total number of '1' bits in a given set of data even.
+  Each parity bit at position N alternately considers N bits then ignores N bits, starting at and including position N.
+  The additional parity bit at position 0 considers all bits including parity bits.
+  For example, the parity bit at position 2 considers bits 2 to 3 and 6 to 7. The parity bit at position 1 considers bits 1, 3, 5 and 7.
+  The endianness of the parity bits is reversed compared to the endianness of the data bits:
+  Data bits are encoded most significant bit first and the parity bits encoded least significant bit first.
+  The additional parity bit at position 0 is set last.
+  There is a ~55% chance for an altered bit at a random index.
+  Find the possible altered bit, fix it and extract the decimal value.
+
+  Examples:
+
+  '11110000' passes the parity checks and has data bits of 1000, which is 8 in binary.
+  '1001101010' fails the parity checks and needs the last bit to be corrected to get '1001101011', after which the data bits are found to be 10101, which is 21 in binary.
+
+  For more information on the 'rule' of encoding, refer to Wikipedia (https://wikipedia.org/wiki/Hamming_code) or the 3Blue1Brown videos on Hamming Codes. (https://youtube.com/watch?v=X8jsijhllIA)
+  NOTE: The wikipedia entry does not cover the specific 'extended Hamming code' structure used in this contract.*/
+  const binary_data = data.split('').map((s) => Number(s));
+  let next_parity_bit = 0;
+  const parity_bit_responsibility: number[][] = [];
+  const data_indexes: number[] = [];
+
+  while (next_parity_bit < data.length) {
+    const resp: number[] = [];
+    for (let range_base = next_parity_bit; range_base < data.length; ) {
+      for (
+        let resp_ind = range_base;
+        resp_ind < range_base + (next_parity_bit === 0 ? Infinity : next_parity_bit) && resp_ind < data.length;
+        resp_ind++
+      ) {
+        resp.push(resp_ind);
+      }
+      range_base += next_parity_bit === 0 ? Infinity : next_parity_bit * 2;
+    }
+    parity_bit_responsibility[next_parity_bit] = resp;
+    next_parity_bit = next_parity_bit === 0 ? 1 : next_parity_bit * 2;
+  }
+
+  for (let ind = 0; ind < data.length; ind++) {
+    if (parity_bit_responsibility[ind] === undefined) data_indexes.push(ind);
+  }
+
+  const calc_parity_bit = [] as number[];
+  for (const p of parity_bit_responsibility.entries()) {
+    if (p[1] === undefined) continue;
+    calc_parity_bit[p[0]] = 0;
+    for (const ind of p[1]) calc_parity_bit[p[0]] ^= binary_data[ind];
+  }
+
+  const getData = () => parseInt(data_indexes.map((i) => binary_data[i]).join(''), 2);
+
+  const error_bit = parseInt(
+    calc_parity_bit
+      .filter((v) => v !== undefined)
+      .slice(1)
+      .reverse()
+      .join(''),
+    2,
+  );
+  binary_data[error_bit] ^= 1;
+  const extract_data = data_indexes.map((i) => binary_data[i]);
+
+  const ret_data = getData();
+  logger.Log(`${data} -> X: [${error_bit}] -> ${extract_data.join('')} -> ${ret_data}`);
+  return ret_data;
 }
 
 function CompressionIRLECompression(data: string, logger: Logger) {

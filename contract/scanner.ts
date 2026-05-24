@@ -41,6 +41,7 @@ export async function main(ns: NS) {
     'Total Number of Primes': true,
     'Square Root': true,
     'HammingCodes: Integer to Encoded Binary': true,
+    'HammingCodes: Encoded Binary to Integer': true,
     'Compression I: RLE Compression': true,
     'Generate IP Addresses': true,
     'Proper 2-Coloring of a Graph': true,
