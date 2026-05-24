@@ -52,6 +52,7 @@ export async function main(ns: NS) {
     'Shortest Path in a Grid': true,
     'Minimum Path Sum in a Triangle': true,
     'Find All Valid Math Expressions': true,
+    'Merge Overlapping Intervals': true,
   };
 
   let waiting_script = [] as number[];

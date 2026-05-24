@@ -43,6 +43,7 @@ const known_types: Partial<Record<CodingContractName, [boolean, (d: any, l: Logg
   'Shortest Path in a Grid': [true, ShortestPathInAGrid],
   'Minimum Path Sum in a Triangle': [true, MinimumPathSumInATriangle],
   'Find All Valid Math Expressions': [true, FindAllValidMathExpressions],
+  'Merge Overlapping Intervals': [true, MergeOverlappingIntervals],
 };
 
 export async function main(ns: NS) {
@@ -1325,6 +1326,42 @@ export function MinimumPathSumInATriangle(triangle: number[][], logger: Logger) 
   const ret = traverse_triangle([], 0);
   logger.Log(`${JSON.stringify(triangle)} -> ${JSON.stringify(ret)}`);
   return ret[0];
+}
+
+export function MergeOverlappingIntervals(data: [number, number][], logger: Logger) {
+  /*type: Merge Overlapping Intervals.
+  primes: 249658, 3492569, known_partitions: 69
+  Training 'Merge Overlapping Intervals' contract
+  Training contract 'Merge Overlapping Intervals' with data [[10,12],[11,20],[21,28],[19,21],[18,23],[15,23],[2,7],[11,20],[4,5],[13,18],[15,19],[13,18],[14,24],[6,16],[23,33],[8,11],[2,9]].
+  Description: Given the following array of arrays of numbers representing a list of intervals, merge all overlapping intervals.
+
+  [[10,12],[11,20],[21,28],[19,21],[18,23],[15,23],[2,7],[11,20],[4,5],[13,18],[15,19],[13,18],[14,24],[6,16],[23,33],[8,11],[2,9]]
+
+  Example:
+
+  [[1, 3], [8, 10], [2, 6], [10, 16]]
+
+  would merge into [[1, 6], [8, 16]].
+
+  The intervals must be returned in ASCENDING order. You can assume that in an interval, the first number will always be smaller than the second.*/
+  const intervals = data.sort((i1, i2) => (i1[0] == i2[0] ? i1[1] - i2[1] : i1[0] - i2[0]));
+
+  const merged_intervals = [];
+
+  while (intervals.length > 0) {
+    let interval = intervals.shift() as [number, number];
+    for (let ind = 0; ind < intervals.length; ind++) {
+      const other_interval = intervals[ind];
+      if (interval[1] >= other_interval[0]) {
+        interval = [interval[0], Math.max(interval[1], other_interval[1])];
+        intervals.splice(ind, 1);
+        ind--;
+      }
+    }
+    merged_intervals.push(interval);
+  }
+
+  return merged_intervals;
 }
 
 export function autocomplete(data: AutocompleteData, args: ScriptArg[]) {
