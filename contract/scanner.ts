@@ -33,6 +33,7 @@ export async function main(ns: NS) {
     'Algorithmic Stock Trader IV': true,
     'Find Largest Prime Factor': true,
     'Encryption I: Caesar Cipher': true,
+    'Encryption II: Vigenère Cipher': true,
     'Total Ways to Sum': true,
     'Largest Rectangle in a Matrix': true,
     'Array Jumping Game': true,
