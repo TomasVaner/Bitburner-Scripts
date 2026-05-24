@@ -19,6 +19,9 @@ const known_ways: {
 const known_types: Partial<Record<CodingContractName, [boolean, (d: any, l: Logger) => any]>> = {
   'Subarray with Maximum Sum': [false, SubarrayWithMaximumSum],
   'Algorithmic Stock Trader I': [false, AlgorithmicStockTraderI],
+  'Algorithmic Stock Trader II': [true, AlgorithmicStockTraderII],
+  'Algorithmic Stock Trader III': [true, AlgorithmicStockTraderIII],
+  'Algorithmic Stock Trader IV': [true, AlgorithmicStockTraderIV],
   'Find Largest Prime Factor': [false, FindLargestPrimeFactor],
   'Encryption I: Caesar Cipher': [false, EncryptionICaesarCipher],
   'Total Ways to Sum': [false, TotalWaysToSum],
@@ -162,6 +165,25 @@ function SubarrayWithMaximumSum(data: number[], logger: Logger) {
   return max_sum;
 }
 
+function AlgorithmicStockTrader(count: number, prices: number[], known: Record<string, number>) {
+  if (count == 0) return 0;
+  const profit_key = `${count} - [${prices}]`;
+  if (known[profit_key] != undefined) return known[profit_key];
+
+  let max_profit = 0;
+
+  for (let ind_buy = 0; ind_buy < prices.length; ++ind_buy) {
+    for (let ind_sell = ind_buy + 1; ind_sell < prices.length; ++ind_sell) {
+      const profit =
+        prices[ind_sell] - prices[ind_buy] + AlgorithmicStockTrader(count - 1, prices.slice(ind_sell + 1), known);
+      if (max_profit < profit) max_profit = profit;
+    }
+  }
+
+  known[profit_key] = max_profit;
+  return max_profit;
+}
+
 function AlgorithmicStockTraderI(data: number[], logger: Logger) {
   /*{ "type": "Algorithmic Stock Trader I", 
     "data": [133, 12, 166, 146, 106, 37, 82, 126, 89, 155, 123, 81, 122], 
@@ -172,16 +194,61 @@ function AlgorithmicStockTraderI(data: number[], logger: Logger) {
     (i.e. you can only buy and sell the stock once). If no profit can be made then the answer should be 0.
     Note that you have to buy the stock before you can sell it.", "difficulty": 1 }*/
 
-  let max_profit = -Infinity;
+  const ret = AlgorithmicStockTrader(1, data, {});
+  logger.Log(`[${data}] -> ${ret}`);
 
-  for (let ind_buy = 0; ind_buy < data.length; ++ind_buy) {
-    for (let ind_sell = ind_buy + 1; ind_sell < data.length; ++ind_sell) {
-      const profit = data[ind_sell] - data[ind_buy];
-      if (max_profit < profit) max_profit = profit;
-    }
-  }
+  return ret;
+}
 
-  return max_profit;
+export function AlgorithmicStockTraderII(data: number[], logger: Logger) {
+  /*Training contract 'Algorithmic Stock Trader II'
+  with data [107,65,27,94,167,81,28,91,85,141,181,61,124,25,121,156,184,30,50,174,138,129,132,35,164,13,62,137,90,140,92,96,70,83,32,21,176,187,52,187,30,85,153,174,106,81,86,176,54].
+  Description: You are given the following array of stock prices (which are numbers) where the i-th element represents the stock price on day i:
+
+ 107,65,27,94,167,81,28,91,85,141,181,61,124,25,121,156,184,30,50,174,138,129,132,35,164,13,62,137,90,140,92,96,70,83,32,21,176,187,52,187,30,85,153,174,106,81,86,176,54
+
+ Determine the maximum possible profit you can earn using as many transactions as you'd like. A transaction is defined as buying and then selling one share of the stock. Note that you cannot engage in multiple transactions at once. In other words, you must sell the stock before you buy it again.
+
+ If no profit can be made, then the answer should be 0.*/
+
+  const ret = AlgorithmicStockTrader(Infinity, data, {});
+  logger.Log(`[${data}] -> ${ret}`);
+
+  return ret;
+}
+
+function AlgorithmicStockTraderIII(data: number[], logger: Logger) {
+  /* type: Algorithmic Stock Trader III data: [60,1,131,66,145,82,178,50,177,32,58,158,181,15,172,22,41,161,143,31,56,50,39,183,36,37,176,165],
+  desc: You are given the following array of stock prices (which are numbers) where the i-th element represents the stock price on day i:
+
+  60,1,131,66,145,82,178,50,177,32,58,158,181,15,172,22,41,161,143,31,56,50,39,183,36,37,176,165
+
+  Determine the maximum possible profit you can earn using at most two transactions. A transaction is defined as buying and then selling one share of the stock. Note that you cannot engage in multiple transactions at once. In other words, you must sell the stock before you buy it again.
+
+  If no profit can be made, then the answer should be 0., diff: 4*/
+
+  const ret = AlgorithmicStockTrader(2, data, {});
+  logger.Log(`[${data}] -> ${ret}`);
+
+  return ret;
+}
+
+function AlgorithmicStockTraderIV([k, data]: [number, number[]], logger: Logger) {
+  /*type: Algorithmic Stock Trader IV data: [4,[193,145,199,61,139,32,27,124,159,66,20,64,165,103,154,76,28,44,107,200]],
+  desc: You are given the following array with two elements:
+
+  [4, [193,145,199,61,139,32,27,124,159,66,20,64,165,103,154,76,28,44,107,200]]
+
+  The first element is an integer k. The second element is an array of stock prices (which are numbers) where the i-th element represents the stock price on day i.
+
+  Determine the maximum possible profit you can earn using at most k transactions. A transaction is defined as buying and then selling one share of the stock. Note that you cannot engage in multiple transactions at once. In other words, you must sell the stock before you can buy it again.
+
+  If no profit can be made, then the answer should be 0., diff: 8*/
+
+  const ret = AlgorithmicStockTrader(k, data, {});
+  logger.Log(`${k}, [${data}] -> ${ret}`);
+
+  return ret;
 }
 
 function CheckPrime(num: number) {

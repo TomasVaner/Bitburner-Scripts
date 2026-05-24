@@ -28,6 +28,9 @@ export async function main(ns: NS) {
   const solvable_types: Partial<Record<CodingContractName, boolean>> = {
     'Subarray with Maximum Sum': true,
     'Algorithmic Stock Trader I': true,
+    'Algorithmic Stock Trader II': true,
+    'Algorithmic Stock Trader III': true,
+    'Algorithmic Stock Trader IV': true,
     'Find Largest Prime Factor': true,
     'Encryption I: Caesar Cipher': true,
     'Total Ways to Sum': true,
