@@ -43,6 +43,8 @@ export async function main(ns: NS) {
     'HammingCodes: Integer to Encoded Binary': true,
     'HammingCodes: Encoded Binary to Integer': true,
     'Compression I: RLE Compression': true,
+    'Compression II: LZ Decompression': true,
+    'Compression III: LZ Compression': true,
     'Generate IP Addresses': true,
     'Proper 2-Coloring of a Graph': true,
     'Unique Paths in a Grid I': true,

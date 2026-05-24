@@ -34,6 +34,8 @@ const known_types: Partial<Record<CodingContractName, [boolean, (d: any, l: Logg
   'HammingCodes: Integer to Encoded Binary': [true, HammingCodesIntegerToEncodedBinary],
   'HammingCodes: Encoded Binary to Integer': [true, HammingCodesEncodedBinaryToInteger],
   'Compression I: RLE Compression': [true, CompressionIRLECompression],
+  'Compression II: LZ Decompression': [true, CompressionIILZDecompression],
+  'Compression III: LZ Compression': [true, CompressionIIILZCompression],
   'Generate IP Addresses': [true, GenerateIPAddressesData],
   'Proper 2-Coloring of a Graph': [true, Proper2ColoringOfAGraph],
   'Unique Paths in a Grid I': [true, UniquePathInAGridI],
@@ -840,6 +842,130 @@ function CompressionIRLECompression(data: string, logger: Logger) {
   logger.Log(`Data: '${data}', Compress: '${compressed}'`);
 
   return compressed;
+}
+
+export function CompressionIILZDecompression(data: string, logger: Logger) {
+  /*'Compression II: LZ Decompression' with data "6jFzfSN714Fz7U6886NMClG0t617P7SWtTP219H03s6yx5L0314Q763n1D". Description: Lempel-Ziv (LZ) compression is a data compression technique which encodes data using references to earlier parts of the data. In this variant of LZ, data is encoded in two types of chunk. Each chunk begins with a length L, encoded as a single ASCII digit from 1 to 9, followed by the chunk data, which is either:
+
+  1. Exactly L characters, which are to be copied directly into the uncompressed data.
+  2. A reference to an earlier part of the uncompressed data. To do this, the length is followed by a second ASCII digit X: each of the L output characters is a copy of the character X places before it in the uncompressed data.
+
+  For both chunk types, a length of 0 instead means the chunk ends immediately, and the next character is the start of a new chunk. The two chunk types alternate, starting with type 1, and the final chunk may be of either type.
+
+  You are given the following LZ-encoded string:
+     6jFzfSN714Fz7U6886NMClG0t617P7SWtTP219H03s6yx5L0314Q763n1D
+  Decode it and output the original string.
+
+  Example: decoding '5aaabb450723abb' chunk-by-chunk
+
+     5aaabb           ->  aaabb
+     5aaabb45         ->  aaabbaaab
+     5aaabb450        ->  aaabbaaab
+     5aaabb45072      ->  aaabbaaababababa
+     5aaabb450723abb  ->  aaabbaaababababaabb*/
+  let decompressed = '';
+  let type = 0;
+  for (let ind = 0; ind < data.length; ) {
+    if (type == 0) {
+      const len = Number(data[ind]);
+      decompressed = decompressed + data.substring(ind + 1, ind + 1 + len);
+      ind += len + 1;
+      type = 1;
+    } else {
+      const len = Number(data[ind]);
+      const offset = Number(data[ind + 1]);
+      for (let count = 0; count < len; count++) decompressed = decompressed + decompressed.at(-offset);
+      ind += len > 0 ? 2 : 1;
+      type = 0;
+    }
+  }
+  return decompressed;
+}
+
+export function CompressionIIILZCompression(data: string, logger: Logger) {
+  /*'Compression III: LZ Compression' with data "dALALALALALGBF7ss5MxxxxzsYi2WISb3ugsqugsq3ugsqyY3ug46VY3ug46VY6VY". Description: Lempel-Ziv (LZ) compression is a data compression technique which encodes data using references to earlier parts of the data. In this variant of LZ, data is encoded in two types of chunk. Each chunk begins with a length L, encoded as a single ASCII digit from 1 to 9, followed by the chunk data, which is either:
+
+ 1. Exactly L characters, which are to be copied directly into the uncompressed data.
+ 2. A reference to an earlier part of the uncompressed data. To do this, the length is followed by a second ASCII digit X: each of the L output characters is a copy of the character X places before it in the uncompressed data.
+
+ For both chunk types, a length of 0 instead means the chunk ends immediately, and the next character is the start of a new chunk. The two chunk types alternate, starting with type 1, and the final chunk may be of either type.
+
+ You are given the following input string:
+     dALALALALALGBF7ss5MxxxxzsYi2WISb3ugsqugsq3ugsqyY3ug46VY3ug46VY6VY
+ Encode it using Lempel-Ziv encoding with the minimum possible output length.
+
+ Examples (some have other possible encodings of minimal length):
+     abracadabra     ->  7abracad47
+     mississippi     ->  4miss433ppi
+     aAAaAAaAaAA     ->  3aAA53035
+     2718281828      ->  627182844
+     abcdefghijk     ->  9abcdefghi02jk
+     aaaaaaaaaaaa    ->  3aaa91
+     aaaaaaaaaaaaa   ->  1a91031
+     aaaaaaaaaaaaaa  ->  1a91041*/
+
+  const known_compressions: Record<string, string | undefined> = {};
+
+  function compress(
+    compressed_data: string,
+    data_to_compress: string,
+    type: number,
+    last_empty: boolean,
+  ): string | undefined {
+    const compress_key = compressed_data + '~' + data_to_compress + '~' + type + '~' + last_empty;
+    if (known_compressions[compress_key]) {
+      return known_compressions[compress_key];
+    }
+    if (data_to_compress.length == 0) {
+      return '';
+    }
+
+    let min_compression: string | undefined = undefined;
+
+    if (type == 0) {
+      for (let i = last_empty ? 1 : 0; i <= Math.min(9, data_to_compress.length); i++) {
+        const next_compressed_data = compressed_data + data_to_compress.slice(0, i);
+        const next_data_to_compress = data_to_compress.slice(i);
+        const compressed = compress(next_compressed_data, next_data_to_compress, 1, i === 0);
+        if (compressed === undefined) continue;
+        const res = i.toString() + data_to_compress.slice(0, i) + compressed;
+
+        if ((min_compression?.length ?? Infinity) > res.length) {
+          min_compression = res;
+        }
+      }
+    } else {
+      if (!last_empty) min_compression = '0' + compress(compressed_data, data_to_compress, 0, true);
+
+      for (let sh = 1; sh <= Math.min(9, compressed_data.length); sh++) {
+        const shift_substr = compressed_data.slice(-sh) + data_to_compress;
+        let match_length = 0;
+        do {
+          if (shift_substr[match_length] !== data_to_compress[match_length]) break;
+          ++match_length;
+        } while (match_length < Math.min(9, data_to_compress.length, shift_substr.length));
+
+        if (match_length === 0) continue;
+
+        const next_compressed_data = compressed_data + data_to_compress.slice(0, match_length);
+        const next_data_to_compress = data_to_compress.slice(match_length);
+
+        const compressed = compress(next_compressed_data, next_data_to_compress, 0, false);
+        if (compressed === undefined) continue;
+        const res = match_length.toString() + sh.toString() + compressed;
+
+        if ((min_compression?.length ?? Infinity) > res.length) {
+          min_compression = res;
+        }
+      }
+    }
+
+    known_compressions[compress_key] = min_compression;
+    return min_compression;
+  }
+  const compressed_data = compress('', data, 0, true);
+  logger.Log(`'${data}' -> '${compressed_data}'`);
+  return compressed_data ?? '';
 }
 
 export function FindAllValidMathExpressions([data, result]: [string, number], logger: Logger) {
