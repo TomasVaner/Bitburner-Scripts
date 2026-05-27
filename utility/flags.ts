@@ -105,17 +105,6 @@ export namespace Hacking {
     target: string;
     log_file: string;
     port_index: number;
-    log_prefix: string;
-    compute_server: string;
-  };
-
-  export type HackFinishAtArgs = HackArgs & {
-    finish_at: number;
-    process_time: number;
-  };
-
-  export type HackRunAtArgs = HackArgs & {
-    run_at: number;
   };
 
   export type HackDelayArgs = HackArgs & {
