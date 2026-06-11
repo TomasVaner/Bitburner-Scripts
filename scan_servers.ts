@@ -1,5 +1,5 @@
 import { ScriptNames } from './utility/constants';
-import { ConvertToFlagsData } from './utility/flags';
+import { ConvertToFlagsData, GetLastArgument } from './utility/flags';
 import { GetAllServers, Weight } from './utility/scanner';
 
 const flag_struct = {
