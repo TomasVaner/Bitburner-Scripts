@@ -1,11 +1,12 @@
 import { ScriptNames } from './utility/constants';
-import { ConvertToFlagsData } from './utility/flags';
+import { ConvertToFlagsData, GetLastArgument } from './utility/flags';
 import { GetAllServers, Weight } from './utility/scanner';
 
 const flag_struct = {
   limit: Infinity,
   list_all: false,
   skip_stats: false,
+  target: '',
 };
 const flags_data = ConvertToFlagsData(flag_struct);
 
@@ -21,11 +22,12 @@ export async function main(ns: NS) {
   servers = servers.slice(0, flag.limit);
   ns.clear('map.txt');
 
-  const hackRam = ns.getScriptRam(ScriptNames.hack_script);
-  const growRam = ns.getScriptRam(ScriptNames.grow_script);
-  const weakenRam = ns.getScriptRam(ScriptNames.weaken_script);
+  const hackRam = ns.getScriptRam(ScriptNames.hwg_script) + ns.getFunctionRamCost('hack');
+  const growRam = ns.getScriptRam(ScriptNames.hwg_script) + ns.getFunctionRamCost('grow');
+  const weakenRam = ns.getScriptRam(ScriptNames.hwg_script) + ns.getFunctionRamCost('weaken');
 
   ns.tprint('Best servers: ');
+  if (flag.target) servers = servers.filter((s) => s === flag.target);
   for (const server of servers) {
     const so = ns.getServer(server);
     if (!so.hasAdminRights) {
@@ -100,6 +102,9 @@ export async function main(ns: NS) {
           max_batch.threads = hack_threads;
         }
 
+        if (flag.target) {
+          formulas_data += `\t${hack_threads}: ${to_string(threads)}\n`;
+        }
         if (hack_threads == rubicon || threads.total_steal == (fso.moneyMax ?? 0)) {
           //formulas_data += to_string(threads);
           rubicon *= 2;
@@ -142,6 +147,7 @@ export async function main(ns: NS) {
 }
 
 export function autocomplete(data: AutocompleteData, args: ScriptArg[]) {
+  if (GetLastArgument(data, args) == '--target') return data.servers;
   data.flags(flags_data);
   return ['--tail'];
 }

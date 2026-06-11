@@ -1,17 +1,24 @@
 export async function main(ns: NS) {
   const [return_time = 3600] = ns.args as [number];
+  debugger;
   ns.tprint(`Nodes: ${ns.hacknet.numNodes()}/${ns.hacknet.maxNumNodes()}. Return time: ${return_time}`);
-  const mults = ns.getHacknetMultipliers();
-  const formulas = ns.fileExists('Formulas.exe');
   //ns.tprint(`Multipliers: ${mults.production}, ${mults.purchaseCost} ${mults.levelCost},${mults.ramCost},${mults.coreCost}`)
-  let total_production = 0;
   while (true) {
+    let total_production = 0;
+    const mults = ns.getHacknetMultipliers();
+    const formulas = ns.fileExists('Formulas.exe');
     let [min_return_time, index, type] = [Infinity, -1, -1];
     const hack_nets = ns.hacknet.numNodes();
     const money = ns.getPlayer().money;
 
     const total_money_produced = ns.getMoneySources().sinceInstall.hacknet;
     const total_money_spent = ns.getMoneySources().sinceInstall.hacknet_expenses;
+
+    const max_level = {
+      level: 0,
+      ram: 0,
+      cores: 0,
+    };
 
     for (let i = 0; i < hack_nets; ++i) {
       let [level_inc, ram_inc, core_inc] = [1.5 * mults.production, 0.01, 0.01];
@@ -34,6 +41,10 @@ export async function main(ns: NS) {
       const ram_cost = ns.hacknet.getRamUpgradeCost(i);
       const core_cost = ns.hacknet.getCoreUpgradeCost(i);
 
+      max_level.level = Math.max(max_level.level, hack_net.level);
+      max_level.ram = Math.max(max_level.ram, hack_net.ram);
+      max_level.cores = Math.max(max_level.cores, hack_net.cores);
+
       const [level_ret, ram_ret, core_ret] = [level_cost / level_inc, ram_cost / ram_inc, core_cost / core_inc];
       if (level_cost < money && level_ret < min_return_time) {
         [min_return_time, index, type] = [level_ret, i, 0];
@@ -47,15 +58,49 @@ export async function main(ns: NS) {
 
       ns.print(
         `${i}: \n\t${[level_inc, ram_inc, core_inc].map((n) => ns.format.number(n).padEnd(30)).join('\t')}` +
-        `\n\t${[level_cost, ram_cost, core_cost].map((n) => ns.format.number(n).padEnd(30)).join('\t')}` +
-        `\n\t${[level_ret * 1000, ram_ret * 1000, core_ret * 1000]
-          .map((n) => ns.format.time(n).padEnd(30))
-          .join('\t')}`,
+          `\n\t${[level_cost, ram_cost, core_cost].map((n) => ns.format.number(n).padEnd(30)).join('\t')}` +
+          `\n\t${[level_ret * 1000, ram_ret * 1000, core_ret * 1000]
+            .map((n) => ns.format.time(n).padEnd(30))
+            .join('\t')}`,
       );
     }
+
+    if (formulas) {
+      const node_upgrade_cost =
+        ns.formulas.hacknetNodes.levelUpgradeCost(1, max_level.level - 1, mults.levelCost) +
+        ns.formulas.hacknetNodes.ramUpgradeCost(1, Math.log2(max_level.ram) - 1, mults.ramCost) +
+        ns.formulas.hacknetNodes.coreUpgradeCost(1, max_level.cores - 1, mults.coreCost);
+
+      const new_node_income = ns.formulas.hacknetNodes.moneyGainRate(
+        max_level.level,
+        max_level.ram,
+        max_level.cores,
+        mults.production,
+      );
+      const new_node_return_time = (node_upgrade_cost + ns.hacknet.getPurchaseNodeCost()) / new_node_income;
+      if (node_upgrade_cost < money && new_node_return_time < min_return_time) {
+        [min_return_time, index, type] = [new_node_return_time, hack_nets, -1];
+      }
+      ns.print(
+        `new:` +
+          `\n\t${ns.format.number(new_node_income)}` +
+          `\n\t${ns.format.number(node_upgrade_cost + ns.hacknet.getPurchaseNodeCost())}` +
+          `\n\t${ns.format.time(new_node_return_time * 1000)}`,
+      );
+    }
+
     let purchased_something = min_return_time < return_time && index != -1;
     if (purchased_something) {
       switch (type) {
+        case -1: {
+          ns.hacknet.purchaseNode();
+          ns.print(
+            `Purchased new node for ${ns.hacknet.getPurchaseNodeCost().toLocaleString()}. Return time: ${ns.format.time(
+              min_return_time * 1000,
+            )}`,
+          );
+          break;
+        }
         case 0: {
           const cost = ns.hacknet.getLevelUpgradeCost(index);
           ns.hacknet.upgradeLevel(index);
@@ -91,12 +136,16 @@ export async function main(ns: NS) {
     } else {
       const node_cost = ns.hacknet.getPurchaseNodeCost();
 
-      if (node_cost < (total_money_produced + total_money_spent) / 2 && node_cost / total_production < return_time) {
+      if (
+        (node_cost < (total_money_produced + total_money_spent) / 2 && node_cost / total_production < return_time) ||
+        (node_cost < money && hack_nets === 0)
+      ) {
         ns.print(
           `Purchased new node for ${node_cost.toLocaleString()}. Return time~: ${ns.format.time(
             node_cost / total_production,
           )}`,
         );
+        ns.hacknet.purchaseNode();
         purchased_something = true;
       }
     }

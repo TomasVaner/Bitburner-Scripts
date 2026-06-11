@@ -5,6 +5,7 @@ declare global {
     count_unique(mod?: (item: T) => unknown): number;
     sum(mod?: (item: T) => number): number;
     sortby(mod?: (item: T) => number, increase?: boolean): T[];
+    getrandom(): T;
   }
 
   type Unpacked<T> = T extends (infer U)[] ? U : T;
@@ -38,5 +39,11 @@ if (!Array.prototype.sortby) {
     increase = true,
   ) {
     return this.sort((i1, i2) => (increase ? mod(i1) - mod(i2) : mod(i2) - mod(i1)));
+  };
+}
+
+if (!Array.prototype.getrandom) {
+  Array.prototype.getrandom = function getrandom<T>(this: T[]): T {
+    return this.at(Math.floor(Math.random() * this.length)) ?? this[0];
   };
 }
