@@ -2,6 +2,7 @@ import { PortNumbers } from '@/utility/constants';
 import { ContractSolveResultPacket } from '@/utility/network_packets';
 import { NSLogger, Logger } from '@/utility/log';
 import { ConvertToFlagsData, Contract, GetLastArgument } from '@/utility/flags';
+import '@/utility/extensions/array';
 
 const flags_struct: Contract.Solver.FileSolverArgs & Contract.Solver.TypeSolverArgs = {
   filename: '',
@@ -602,16 +603,11 @@ function SquareRoot(num: bigint, logger: Logger) {
   logger.Log(`Number: ${num}`);
 
   function HeronMethod(n: bigint, estimate: bigint) {
-    let i = 0;
     let x: bigint;
     let x_ = estimate;
     do {
       x = x_;
       x_ = (x + n / x) / 2n;
-
-      ++i;
-      const diff = Number(x - x_);
-      logger.Log(`${i}: diff if ${diff}`);
     } while (x != x_);
 
     return x;
