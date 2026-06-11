@@ -140,7 +140,7 @@ export async function main(ns: NS) {
 
   async function readPortInfo(port: number) {
     if (ns.peek(port) !== Strings.null_port_data) return ns.readPort(port);
-    else await ns.nextPortWrite(port);
+    else await Promise.any([ns.nextPortWrite(port), ns.asleep(2000)]);
     return ns.readPort(port);
   }
 }
