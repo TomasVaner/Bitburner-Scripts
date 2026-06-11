@@ -144,7 +144,7 @@ export async function main(ns: NS) {
           getRandomMove(validMoves);
         // TODO: more move options
 
-        if ((opponent_turn?.type == 'pass' && chosen_move?.control != '?') || chosen_move === undefined) {
+        if ((opponent_turn?.type == 'pass' && chosen_move?.control == 'X') || chosen_move === undefined) {
           // Pass turn if no moves are found
           ns.print(`Pass`);
           result = await ns.go.passTurn();
