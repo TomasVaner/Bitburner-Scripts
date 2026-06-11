@@ -14,13 +14,18 @@ export async function main(ns: NS) {
   const res = await authenticate(hostname);
   details = ns.dnet.getServerDetails(hostname);
   if (!res.success) {
-    if (details.isConnectedToCurrentServer && details.isOnline) {
+    if (
+      details.isConnectedToCurrentServer &&
+      details.isOnline &&
+      details.requiredCharismaSkill <= ns.getPlayer().skills.charisma
+    ) {
+      debugger;
       logger.Log(
         `WARNING: ${ns.getHostname()} -> ${hostname}: ${details.modelId} ${JSON.stringify(
           details,
-        )} CHA:${ns.dnet.getServerRequiredCharismaLevel(hostname)} ${res.source} log provided: ${ns.fileExists(
-          logger.log_file,
-        )} (${logger.log_file}). Initial model_id: ${model_id}`,
+        )} CHA:${ns.dnet.getServerRequiredCharismaLevel(hostname)}/${ns.getPlayer().skills.charisma} ${
+          res.source
+        } log provided: ${ns.fileExists(logger.log_file)} (${logger.log_file}). Initial model_id: ${model_id}`,
         { global_log: true },
       );
       if (ns.fileExists(logger.log_file)) ns.scp(logger.log_file, 'home');
