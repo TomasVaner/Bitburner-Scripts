@@ -11,7 +11,8 @@ export async function main(ns: NS) {
   const script_ram = ns.getScriptRam(ScriptNames.memory_share);
   while (true) {
     let total_threads = 0;
-    for (const server of GetAllServers(ns)) {
+    for (const server of GetAllServers(ns).filter((s) => ns.getServer(s).hasAdminRights)) {
+      if (ns.ps(server).length > 0) continue;
       let freeRam = GetFreeRam(ns, server);
       if (server == 'home') freeRam -= 128;
       if (freeRam >= script_ram) {
