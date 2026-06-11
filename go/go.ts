@@ -39,15 +39,34 @@ type Chain = {
 };
 
 const flags_struct = {
-  opponent: 'No AI' as GoOpponent,
+  opponent: undefined as GoOpponent | undefined,
   size: 5 as 5 | 7 | 9 | 13,
   debug: false,
 };
 
 const flags_data = ConvertToFlagsData(flags_struct);
+const opponents: GoOpponent[] = [
+  'Netburners',
+  'Slum Snakes',
+  'The Black Hand',
+  'Tetrads',
+  'Daedalus',
+  'Illuminati',
+  'No AI',
+];
+
+const power_bonus: { [key: string]: number } = {
+  Netburners: 1.3,
+  'Slum Snakes': 1.2,
+  'The Black Hand': 0.9,
+  Tetrads: 0.7,
+  Daedalus: 1.1,
+  Illuminati: 0.7,
+};
 
 export async function main(ns: NS) {
   ns.disableLog('sleep');
+  ns.disableLog('asleep');
   ns.disableLog('go.makeMove');
   ns.disableLog('go.passTurn');
   ns.disableLog('go.opponentNextTurn');
@@ -58,10 +77,45 @@ export async function main(ns: NS) {
   const script_start_ts = performance.now();
   let total_points = 0;
 
+  debugger;
+
+  function getNextOpponent() {
+    const opp_bon = opponents
+      .filter((o) => o != 'No AI')
+      .map((o) => {
+        return {
+          faction: o,
+          bonus_base: (ns.go.analysis.getStats()[o]?.bonusPercent ?? 0) / power_bonus[o],
+          bonus: ns.go.analysis.getStats()[o]?.bonusPercent ?? 0,
+        };
+      });
+
+    ns.print(
+      opp_bon.reduce(
+        (s, o) =>
+          s +
+          `${o.faction.padEnd('The Black Hand'.length)}\t${ns.format.percent(o.bonus / 100)}\t${ns.format.percent(
+            o.bonus_base / 100,
+          )}\n`,
+        '',
+      ),
+    );
+
+    let min_bonus = [Infinity, 'No AI'] as [number, GoOpponent];
+    let max_bonus = [-Infinity, 'No AI'] as [number, GoOpponent];
+    for (const o of opp_bon) {
+      if (o.bonus_base < min_bonus[0]) min_bonus = [o.bonus_base, o.faction];
+      if (o.bonus_base > max_bonus[0]) max_bonus = [o.bonus_base, o.faction];
+    }
+    if (min_bonus[0] > max_bonus[0] * 0.9) return ns.go.getOpponent();
+    return min_bonus[1];
+  }
+
   while (true) {
     await PlayAGame(ns);
     const state = ns.go.getGameState();
-    ns.go.resetBoardState(flag.opponent, flag.size);
+    const next_opponent = flag.opponent ?? getNextOpponent();
+    ns.go.resetBoardState(next_opponent, flag.size);
     total_points += state.blackScore;
     ns.print(
       `Game finished. (${state.blackScore} : ${state.whiteScore}). Total score: ${total_points} (${ns.format.number(
@@ -73,6 +127,7 @@ export async function main(ns: NS) {
   async function PlayAGame(ns: NS) {
     let result;
     let opponent_turn: Awaited<ReturnType<typeof ns.go.opponentNextTurn>> | undefined = undefined;
+    let final_type: string | undefined = undefined;
     do {
       if (ns.go.getCurrentPlayer() === 'Black') {
         const { tiles, chains } = ConvertTiles();
@@ -102,9 +157,13 @@ export async function main(ns: NS) {
       }
 
       // Log opponent's next move, once it happens
-      opponent_turn = await ns.go.opponentNextTurn();
+      const sleep_promise = ns.asleep(5000);
+      const opponent_turn_promise = ns.go.opponentNextTurn();
+      const awaited_turn = await Promise.any([sleep_promise, opponent_turn_promise]);
+      opponent_turn = awaited_turn === true ? undefined : awaited_turn;
       // Keep looping as long as the opponent is playing moves
-    } while (result?.type !== 'gameOver');
+      final_type = result?.type ?? opponent_turn?.type ?? 'gameOver';
+    } while (final_type !== 'gameOver');
   }
 
   function ConvertTiles(board?: string[]) {
@@ -353,9 +412,9 @@ export async function main(ns: NS) {
   }
 
   function getMergeMove(validMoves: Tile[]) {
-    let moveOptions = validMoves.filter((t) => t.control == '?');
-    moveOptions = moveOptions.filter((t) => t.neighbors.friends.length > 0);
+    let moveOptions = validMoves.filter((t) => t.neighbors.friends.length > 0);
     moveOptions = moveOptions.filter((t) => t.neighbors.chains.friends.length > 1);
+    moveOptions = moveOptions.filter((t) => t.neighbors.chains.friends.some((f) => f.liberties.length > 1));
     moveOptions = moveOptions.filter(
       (t) =>
         t.neighbors.chains.friends.reduce((l, c) => {
@@ -399,7 +458,7 @@ export async function main(ns: NS) {
 
 export function autocomplete(data: AutocompleteData, args: ScriptArg[]) {
   if (args.at(-1) == '--opponent' || (args.at(-2) == '--opponent' && data.command.at(-1) != ' ')) {
-    return ['"Netburners"', '"Slum Snakes"', '"The Black Hand"', '"Tetrads"', '"Daedalus"', '"Illuminati"', '"No AI"'];
+    return opponents.map((o) => `"${o}"`);
   }
 
   if (args.at(-1) == '--size' || (args.at(-2) == '--size' && data.command.at(-1) != ' ')) {
