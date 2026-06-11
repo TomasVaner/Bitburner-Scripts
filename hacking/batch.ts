@@ -1,6 +1,6 @@
 import { ScriptNames, HackScripts, Strings } from '@/utility/constants';
 import { NSLogger } from '@/utility/log';
-import { GetAllServers, GetFreeRam, GetRoute, OptimalBatch, Weight } from '@/utility/scanner';
+import { Batch, GetAllServers, GetFreeRam, GetRoute, OptimalBatch, Weight } from '@/utility/scanner';
 import { ConvertArgsToFlags, ConvertToArgs, ConvertToFlagsData, Hacking } from '@/utility/flags';
 import { ProgressBar } from '@/ui/progress_bar';
 import { main as hwg_main, flags_struct as hacking_flags_struct } from '@/hacking/simple/hwg_uni';
@@ -37,16 +37,23 @@ export async function main(ns: NS) {
     ns.disableLog('scp');
     ns.disableLog('sleep');
     ns.disableLog('asleep');
+    ns.disableLog('brutessh');
+    ns.disableLog('ftpcrack');
+    ns.disableLog('httpworm');
+    ns.disableLog('relaysmtp');
+    ns.disableLog('sqlinject');
   } // ignore logs
   const logger = new NSLogger(ns);
   logger.Log('Started hacking');
   ns.clearLog();
   // eslint-disable-next-line no-debugger
-  if (flag.debug) debugger;
+  debugger;
 
-  const hackRam = ns.getScriptRam(ScriptNames.hwg_script) + ns.getFunctionRamCost('hack');
-  const growRam = ns.getScriptRam(ScriptNames.hwg_script) + ns.getFunctionRamCost('grow');
-  const weakenRam = ns.getScriptRam(ScriptNames.hwg_script) + ns.getFunctionRamCost('weaken');
+  const hack_sripts_ram = {
+    hackRam: ns.getScriptRam(ScriptNames.hwg_script) + ns.getFunctionRamCost('hack'),
+    growRam: ns.getScriptRam(ScriptNames.hwg_script) + ns.getFunctionRamCost('grow'),
+    weakenRam: ns.getScriptRam(ScriptNames.hwg_script) + ns.getFunctionRamCost('weaken'),
+  };
 
   const port_hacks = {
     'BruteSSH.exe': ns.brutessh,
@@ -95,6 +102,7 @@ export async function main(ns: NS) {
         logger.Log(`Nuked ${server}`);
       }
       if (
+        flag.debug &&
         so.hasAdminRights &&
         !so.backdoorInstalled &&
         !so.purchasedByPlayer &&
@@ -108,47 +116,59 @@ export async function main(ns: NS) {
     const script = ns.getRunningScript();
     const money_made = script?.onlineMoneyMade ?? 0;
     const money_per_s = money_made / (script?.onlineRunningTime ?? 1);
-    const money = money_made / 2 - spent_on_cloud;
+    let money = money_made / 2 - spent_on_cloud;
     logger.Log(
       `$${ns.format.number(money_made - money_made_reported)} were made in the last batch. $${ns.format.number(
         money_made,
-      )} made in total (${ns.format.number(money_per_s)})`,
+      )} made in total (${ns.format.number(money_per_s)}). Money left for cloud purchase: ${ns.format.number(money)}`,
     );
     money_made_reported = money_made;
 
-    if (clouds.length < ns.cloud.getServerLimit()) {
-      if (flag.buy_clouds) {
-        for (let memory = 2 ** 20; memory >= flag.cloud_starting_memory; memory /= 2)
-          if (ns.cloud.getServerCost(memory) < money) {
-            spent_on_cloud += ns.cloud.getServerCost(memory);
-            ns.cloud.purchaseServer(`cloud-${clouds.length + 1}`, memory);
-            logger.Log(`Purchased cloud server with ${memory}GB. Spent on clouds: ${spent_on_cloud}`, {
-              global_log: true,
-            });
+    if (flag.buy_clouds) {
+      if (clouds.length < ns.cloud.getServerLimit()) {
+        while (
+          ns.cloud.getServerNames().length < ns.cloud.getServerLimit() &&
+          money >= ns.cloud.getServerCost(flag.cloud_starting_memory)
+        ) {
+          for (let memory = 2 ** 20; memory >= flag.cloud_starting_memory; memory /= 2) {
+            if (ns.cloud.getServerCost(memory) < money) {
+              spent_on_cloud += ns.cloud.getServerCost(memory);
+              money -= ns.cloud.getServerCost(memory);
+              ns.cloud.purchaseServer(`cloud`, memory);
+              logger.Log(
+                `Purchased cloud server with ${ns.format.ram(memory)}. Spent on clouds: ${ns.format.number(
+                  spent_on_cloud,
+                )}. Money left to spend: ${ns.format.number(money)}`,
+                {
+                  global_log: true,
+                },
+              );
+              break;
+            }
+          }
+        }
+      } else {
+        const cloud = clouds.reduce((a, b) => {
+          return ns.getServerMaxRam(a) > ns.getServerMaxRam(b) ? b : a;
+        });
+        const cur_memory = ns.getServerMaxRam(cloud);
+        for (let memory = 2 ** 20; memory > cur_memory; memory /= 2)
+          if (ns.cloud.getServerUpgradeCost(cloud, memory) < money / 2) {
+            spent_on_cloud += ns.cloud.getServerUpgradeCost(cloud, memory);
+            ns.cloud.upgradeServer(cloud, memory);
+            logger.Log(
+              `Upgraded cloud server ${cloud} ${ns.format.ram(cur_memory)} -> ${ns.format.ram(
+                memory,
+              )}. Spent on clouds: ${ns.format.number(spent_on_cloud)}`,
+              { global_log: true },
+            );
             break;
           }
       }
-    } else {
-      const cloud = clouds.reduce((a, b) => {
-        return ns.getServerMaxRam(a) > ns.getServerMaxRam(b) ? b : a;
-      });
-      const cur_memory = ns.getServerMaxRam(cloud);
-      for (let memory = 2 ** 20; memory > cur_memory; memory /= 2)
-        if (ns.cloud.getServerUpgradeCost(cloud, memory) < money / 2) {
-          spent_on_cloud += ns.cloud.getServerUpgradeCost(cloud, memory);
-          ns.cloud.upgradeServer(cloud, memory);
-          logger.Log(
-            `Upgraded cloud server ${cloud} ${ns.format.ram(cur_memory)} -> ${ns.format.ram(
-              memory,
-            )}. Spent on clouds: ${ns.format.number(spent_on_cloud)}`,
-            { global_log: true },
-          );
-          break;
-        }
     }
 
     let compute_servers = [...extra_compute_servers].map((c) => {
-      return { hostname: c, freeRam: c == 'home' ? GetFreeRam(ns, c) - 128 : GetFreeRam(ns, c) };
+      return { hostname: c, freeRam: c == 'home' ? Math.max(GetFreeRam(ns, c) - 128, 0) : GetFreeRam(ns, c) };
     });
     compute_servers.sort((a, b) => b.freeRam - a.freeRam).slice(0, flag.limit_servers);
 
@@ -169,131 +189,143 @@ export async function main(ns: NS) {
       }
     }
 
-    const max_ram = compute_servers.sum((cs) => cs.freeRam);
-    let hackable_servers = all_servers
-      .filter((s) => Weight(ns, s) > 0)
+    const hackable_servers = all_servers.filter((s) => ns.getServer(s).hasAdminRights && Weight(ns, s) > 0);
+    if (hackable_servers.length === 0) {
+      hackable_servers.push('n00dles');
+    }
+    const hack_batches = hackable_servers
       .map((s) =>
         OptimalBatch(
           ns,
-          { hackRam, growRam, weakenRam },
+          hack_sripts_ram,
           s,
           {
-            max_ram,
+            compute_servers,
             max_batch_count: flag.limit_batches,
             max_process_count: flag.limit_processes,
           },
           { extra_time },
         ),
+      )
+      .sortby((s) => (s.batches.optimal.steal.total * s.hack_chance) / s.batches.optimal.batch_time, false);
+
+    const cleanup_servers = [];
+    let hack_server: Unpacked<typeof hack_batches> | undefined = undefined;
+
+    const compute_servers_for_cleanup = structuredClone(compute_servers);
+
+    for (let server of hack_batches.filter(
+      (hs) => !running_scipts.some((rs) => rs.parsed_args.target == hs.hostname),
+    )) {
+      let optimized_cleanup = false;
+      if (server.batches.cleanup !== undefined) {
+        if (compute_servers_for_cleanup[0].freeRam < server.batches.cleanup?.ram) {
+          server = OptimalBatch(
+            ns,
+            hack_sripts_ram,
+            server.hostname,
+            {
+              compute_servers: compute_servers_for_cleanup,
+              optimize_cleanup: true,
+            },
+            {},
+          );
+          optimized_cleanup = true;
+        }
+        if (
+          (server.batches.cleanup?.threads.weaken_hack ?? 0) +
+            (server.batches.cleanup?.threads?.grow ?? 0) +
+            (server.batches.cleanup?.threads.weaken_grow ?? 0) >
+            0 &&
+          (server.batches.cleanup?.ram ?? 0) < compute_servers_for_cleanup[0].freeRam
+        ) {
+          compute_servers_for_cleanup[0].freeRam -= server.batches.cleanup?.ram ?? 0;
+          compute_servers_for_cleanup.sortby((cs) => cs.freeRam, false);
+          cleanup_servers.push(server);
+        } else continue;
+      }
+      if (
+        server.batches.cleanup === undefined ||
+        (server.so.hackDifficulty == server.so.minDifficulty && !optimized_cleanup)
+      ) {
+        hack_server = server;
+        break;
+      }
+    }
+
+    if (hack_server !== undefined && cleanup_servers.length > 0) {
+      const total_ram = compute_servers.sum((cs) => cs.freeRam);
+      const total_ram_leftover = compute_servers_for_cleanup.sum((cs) => cs.freeRam);
+      const total_processes_used = cleanup_servers.sum((cs) => cs.batches.cleanup?.get_processes() ?? 0);
+      const total_batches_used = cleanup_servers.length;
+      const hack_server_prev = hack_server;
+      hack_server = OptimalBatch(
+        ns,
+        hack_sripts_ram,
+        hack_server.hostname,
+        {
+          compute_servers: compute_servers_for_cleanup,
+          max_batch_count: flag.limit_batches - total_batches_used,
+          max_process_count: flag.limit_processes - total_processes_used,
+        },
+        { extra_time },
+      );
+      logger.Log(
+        `WARNING: switch batch for ${hack_server_prev.hostname}: ${hack_server_prev.batches.optimal.to_string(
+          ns,
+        )} -> ${hack_server.batches.optimal.to_string(
+          ns,
+        )} pu:${total_processes_used} bu:${total_batches_used} ru:${ns.format.ram(
+          compute_servers.sum((cs) => cs.freeRam) - total_ram_leftover,
+        )} can afford_batches: ${Math.floor(total_ram / hack_server_prev.batches.optimal.ram)} -> ${Math.floor(
+          total_ram_leftover / hack_server.batches.optimal.ram,
+        )}`,
       );
 
-    if (hackable_servers.some((s) => s.cleanup)) {
-      const hackable_servers_cleanup = hackable_servers
-        .filter((s) => s.cleanup)
-        .filter((s) => !running_scipts.some((p) => p.parsed_args.target == s.hostname))
-        .sortby((s) => s.ram);
-      if (hackable_servers_cleanup.length > 0) hackable_servers = hackable_servers_cleanup;
-      else hackable_servers = hackable_servers.filter((s) => !s.cleanup);
-
-      hackable_servers.sortby((s) => (s.steal.total * s.hack_chance) / s.batch_time, false);
+      if (hack_server.batches.optimal.ram > compute_servers_for_cleanup[0].freeRam) {
+        hack_server = undefined;
+      }
     }
-
-    if (hackable_servers.length === 0) {
-      await ns.sleep(5000);
-      continue;
-    }
-    /*hackable_servers = hackable_servers
-			.filter(s => !(s.hostname in running));*/
-
-    if (!hackable_servers[0].cleanup)
-      compute_servers = compute_servers.filter(
-        (cs) => cs.freeRam > hackable_servers[0].ram && !ns.scriptRunning(ScriptNames.hwg_script, cs.hostname),
-      );
-
-    if (compute_servers.length == 0) {
-      await ns.asleep(1000);
-      continue;
-    }
-
-    const total_free_ram = compute_servers.reduce((r, s) => r + s.freeRam, 0);
 
     for (const cloud_server of compute_servers) {
       if (cloud_server.hostname == ns.getHostname()) continue;
       ns.scp(HackScripts, cloud_server.hostname);
     }
-    logger.Log(
-      `INFO: ${hackable_servers.length} servers found: ` +
-        (flag.debug
-          ? `${JSON.stringify(hackable_servers[0])}`
-          : `${hackable_servers[0].hostname} ${JSON.stringify(hackable_servers[0].threads)}`),
-    );
+
     logger.Log(`INFO: ${compute_servers.length} compute servers found`);
+    if (cleanup_servers.length > 0) {
+      logger.Log(
+        `WARNING: ${cleanup_servers.length} cleanup servers. ${cleanup_servers.map(
+          (cs) => `${cs.hostname}: ${cs.batches.cleanup?.to_string(ns)}=>${cs.batches.optimal.to_string(ns)}`,
+        )}`,
+      );
+    }
+    if (hack_server !== undefined) {
+      logger.Log(`INFO: Found hack target: ${hack_server.hostname}: ${hack_server.batches.optimal.to_string(ns)}`);
+    }
 
     let started_batches = 0;
-
-    const target_servers = hackable_servers[0]?.cleanup ? [...hackable_servers] : [hackable_servers[0]];
-
+    let started_processes = 0;
+    let lastSync = performance.now();
     const start_launch_time = performance.now();
+    if (compute_servers.length === 0) {
+      throw `No compute servers available for batch processing`;
+    }
 
-    let sleep = Infinity;
-    const lastSync = performance.now();
-    for (let target_server of target_servers) {
-      sleep = Math.min(target_server.time.weaken, sleep);
+    const convert_to_args = (arg_obj: Hacking.HackDelayArgs) => ConvertToArgs(arg_obj);
 
-      if (compute_servers.length === 0) {
-        logger.Log(`No compute servers available for batch processing`);
-        break;
-      }
-      if (target_server.cleanup) {
-        compute_servers = compute_servers.sortby((cs) => cs.freeRam, false);
-        if (target_server.ram > compute_servers[0]?.freeRam ?? 0) {
-          const initial_target = target_server;
-          target_server = OptimalBatch(
-            ns,
-            { hackRam, growRam, weakenRam },
-            target_server.hostname,
-            {
-              max_ram: compute_servers[0].freeRam,
-              optmize_cleanup: true,
-            },
-            {},
-          );
-          if (target_server.ram > compute_servers[0].freeRam) {
-            logger.Log(`Could not find enough memory to clean ${target_server.hostname}`);
-            continue;
-          } else {
-            logger.Log(
-              `Reduced cleanup batch for ${target_server.hostname} from ${ns.format.ram(
-                initial_target.ram,
-              )} to ${ns.format.ram(target_server.ram)}/${ns.format.ram(compute_servers[0].freeRam)}. ${
-                initial_target.threads.weaken_hack
-              }|${initial_target.threads.grow}|${initial_target.threads.weaken_grow} -> ${
-                target_server.threads.weaken_hack
-              }|${target_server.threads.grow}|${target_server.threads.weaken_grow}`,
-            );
-          }
-        }
-      }
-      ns.print(
-        `Start batch on ${target_server.hostname} time to finish = ${ns.format.time(
-          target_server.time.batch,
-        )}. Time since start: ${ns.format.time(start_launch_time - start_time, true)}. Compute server: ${
-          compute_servers[0].hostname
-        }[${ns.format.ram(compute_servers[0].freeRam)}]`,
-      );
-
+    function get_process_args(target: Unpacked<typeof hack_batches>, batch: Batch) {
       const common_args = {
-        target: target_server.hostname,
+        target: target.hostname,
         port_index: -1,
         log_file: flag.debug ? logger.log_file : '',
       };
-
-      const convert_to_args = (arg_obj: Hacking.HackDelayArgs) => ConvertToArgs(arg_obj);
 
       const process_args = {
         hack: convert_to_args({
           ...common_args,
           operation: 'hack',
-          delay: target_server.time.weaken - target_server.time.hack,
+          delay: target.time.weaken - target.time.hack,
         }),
         weaken_hack: convert_to_args({
           ...common_args,
@@ -303,7 +335,7 @@ export async function main(ns: NS) {
         grow: convert_to_args({
           ...common_args,
           operation: 'grow',
-          delay: target_server.time.weaken - target_server.time.grow,
+          delay: target.time.weaken - target.time.grow,
         }),
         weaken_grow: convert_to_args({
           ...common_args,
@@ -319,118 +351,210 @@ export async function main(ns: NS) {
       };
 
       const thread_args = {
-        hack: { threads: target_server.threads.hack, temporary: true, ramOverride: hackRam },
-        weaken_hack: { threads: target_server.threads.weaken_hack, temporary: true, ramOverride: weakenRam },
-        grow: { threads: target_server.threads.grow, temporary: true, ramOverride: growRam },
-        weaken_grow: { threads: target_server.threads.weaken_grow, temporary: true, ramOverride: weakenRam },
+        hack: { threads: batch.threads.hack, temporary: true, ramOverride: hack_sripts_ram.hackRam },
+        weaken_hack: { threads: batch.threads.weaken_hack, temporary: true, ramOverride: hack_sripts_ram.weakenRam },
+        grow: { threads: batch.threads.grow, temporary: true, ramOverride: hack_sripts_ram.growRam },
+        weaken_grow: { threads: batch.threads.weaken_grow, temporary: true, ramOverride: hack_sripts_ram.weakenRam },
       } as { hack: RunOptions; weaken_hack: RunOptions; grow: RunOptions; weaken_grow: RunOptions };
 
-      compute_servers = compute_servers.filter((cs) => cs.freeRam > target_server.ram);
+      return [process_args, thread_args] as [typeof process_args, typeof thread_args];
+    }
 
-      for (let cs_ind = 0; cs_ind < compute_servers.length; ++cs_ind) {
-        const cs = compute_servers[cs_ind];
-        const availableBatches =
-          target_server.cleanup || flag.single_batch ? 1 : Math.floor(cs.freeRam / target_server.ram);
-        if (availableBatches == 0) break;
+    async function start_batches(
+      batch: Batch,
+      compute_server: Unpacked<typeof compute_servers>,
+      process_args: {
+        hack: ScriptArg[];
+        weaken_hack: ScriptArg[];
+        grow: ScriptArg[];
+        weaken_grow: ScriptArg[];
+        weaken_grow_last: ScriptArg[];
+      },
+      thread_args: { hack: RunOptions; weaken_hack: RunOptions; grow: RunOptions; weaken_grow: RunOptions },
+      last_cs: boolean,
+    ) {
+      const availableBatches = Math.floor(
+        Math.min(
+          batch.threads.hack === 0 ? 1 : Infinity,
+          compute_server.freeRam / batch.ram,
+          flag.limit_batches - started_batches,
+          (flag.limit_processes - started_processes) / batch.get_processes(),
+        ),
+      );
 
-        for (let b_ind = 0; b_ind < availableBatches; ++b_ind) {
-          const last_batch = b_ind == availableBatches - 1 && cs_ind == compute_servers.length - 1;
+      last_cs ||= started_batches + availableBatches + 1 > flag.limit_batches;
+      last_cs ||= started_processes + (availableBatches + 1) * batch.get_processes() > flag.limit_processes;
 
-          if (target_server.threads.hack > 0) {
-            ns.exec(ScriptNames.hwg_script, cs.hostname, thread_args.hack, ...process_args.hack);
-          }
-          if (target_server.threads.weaken_hack > 0) {
-            const last_process = last_batch && target_server.cleanup && target_server.threads.grow === 0;
-            ns.exec(
-              ScriptNames.hwg_script,
-              cs.hostname,
-              thread_args.weaken_hack,
-              ...(last_process ? process_args.weaken_grow_last : process_args.weaken_grow),
-            );
-          }
-
-          if (target_server.threads.grow > 0) {
-            ns.exec(ScriptNames.hwg_script, cs.hostname, thread_args.grow, ...process_args.grow);
-          }
-          if (target_server.threads.weaken_grow > 0) {
-            ns.exec(
-              ScriptNames.hwg_script,
-              cs.hostname,
-              thread_args.weaken_grow,
-              ...(last_batch ? process_args.weaken_grow_last : process_args.weaken_grow),
-            );
-          }
-          ++started_batches;
-          /*if (performance.now() - lastSync > flag.sync_interval) {
-            await ns.asleep(0);
-            lastSync = performance.now();
-          }*/
-        }
-        compute_servers[cs_ind].freeRam -= target_server.ram * availableBatches;
-
-        if (target_server.cleanup) break;
+      if (availableBatches <= 0) {
+        if (flag.debug)
+          logger.Log(
+            `ERROR: ${JSON.stringify(compute_server)}: No available batches for ${batch.to_string(
+              ns,
+            )}, prcessess: ${started_processes}, batches: ${started_batches}`,
+          );
+        return 0;
       }
 
-      logger.Log(`WARNING: Exec time: ${ns.format.time(performance.now() - start_launch_time, true)}`);
-      if (!target_server.cleanup) {
-        logger.Log(
-          `Started ${started_batches} batches on ${target_server.hostname} (${ns.format.ram(
-            target_server.ram * started_batches,
-          )}/${ns.format.ram(total_free_ram)}). ` +
-            `Expected steal ${ns.format.number(
-              target_server.steal.per_batch * started_batches * target_server.hack_chance,
-            )} / ${ns.format.number(target_server.steal.total * target_server.hack_chance)} in ${ns.format.time(
-              target_server.time.batch + 5,
-            )} (${ns.format.number(
-              ((target_server.steal.per_batch * started_batches * target_server.hack_chance) /
-                target_server.time.weaken) *
-                1000,
-            )}, ${ns.format.number(
-              ((target_server.steal.per_batch * started_batches * target_server.hack_chance) /
-                target_server.time.batch) *
-                1000,
-            )}))`,
-        );
-      } else {
-        const diff_diff = (target_server.so.hackDifficulty ?? 0) - (target_server.so.minDifficulty ?? 0);
-        const money_diff = (target_server.so.moneyMax ?? 0) - (target_server.so.moneyAvailable ?? 0);
-        const money_percent = money_diff / (target_server.so.moneyMax ?? 1);
-        const cleanup_str = `${target_server.hostname}: d:${diff_diff}, m:${ns.format.number(
-          money_diff,
-        )}(${ns.format.percent(money_percent)})`;
+      for (let b_ind = 0; b_ind < availableBatches; ++b_ind) {
+        const last_batch = b_ind == availableBatches - 1 && last_cs;
 
+        if (batch.threads.hack > 0) {
+          ns.exec(ScriptNames.hwg_script, compute_server.hostname, thread_args.hack, ...process_args.hack);
+          ++started_processes;
+        }
+        if (batch.threads.weaken_hack > 0) {
+          const last_process = last_batch && batch.threads.hack === 0 && batch.threads.grow === 0;
+          ns.exec(
+            ScriptNames.hwg_script,
+            compute_server.hostname,
+            thread_args.weaken_hack,
+            ...(last_process ? process_args.weaken_grow_last : process_args.weaken_grow),
+          );
+          ++started_processes;
+        }
+
+        if (batch.threads.grow > 0) {
+          ns.exec(ScriptNames.hwg_script, compute_server.hostname, thread_args.grow, ...process_args.grow);
+          ++started_processes;
+        }
+        if (batch.threads.weaken_grow > 0) {
+          const pid = ns.exec(
+            ScriptNames.hwg_script,
+            compute_server.hostname,
+            thread_args.weaken_grow,
+            ...(last_batch ? process_args.weaken_grow_last : process_args.weaken_grow),
+          );
+          if (last_batch) {
+            logger.Log(`Last process on ${compute_server.hostname} is PID ${pid}`);
+          }
+          ++started_processes;
+        }
+        ++started_batches;
+        ns.enums.LocationName;
+        if (performance.now() - lastSync > flag.sync_interval) {
+          await ns.asleep(0);
+          await ns.asleep(0);
+          lastSync = performance.now();
+        }
+      }
+      compute_server.freeRam -= batch.ram * availableBatches;
+      return availableBatches;
+    }
+
+    const waiting_for_sleep =
+      hack_server === undefined
+        ? cleanup_servers.length > 0
+          ? cleanup_servers.reduce((s1, s2) =>
+              (s2.batches.cleanup?.batch_time ?? 0) > (s1.batches.cleanup?.batch_time ?? 0) ? s1 : s2,
+            )?.batches?.cleanup
+          : undefined
+        : hack_server.batches.optimal;
+
+    for (const cleanup_server of cleanup_servers) {
+      if (cleanup_server.batches.cleanup === undefined) throw `Unexpected empty cleanup batch`;
+      if ((cleanup_server.batches.cleanup?.ram ?? 0) > (compute_servers[0]?.freeRam ?? 0)) {
+        throw new Error(
+          `ERROR: could not start cleanup for ${cleanup_server.hostname}: ${cleanup_server.batches.cleanup?.to_string(
+            ns,
+          )}, free ram: ${ns.format.ram(compute_servers[0].freeRam)}`,
+        );
+      }
+
+      const diff_diff = (cleanup_server.so.hackDifficulty ?? 0) - (cleanup_server.so.minDifficulty ?? 0);
+      const money_diff = (cleanup_server.so.moneyMax ?? 0) - (cleanup_server.so.moneyAvailable ?? 0);
+      const money_percent = money_diff / (cleanup_server.so.moneyMax ?? 1);
+      const cleanup_str = `${cleanup_server.hostname}: d:${diff_diff}, m:${ns.format.number(
+        money_diff,
+      )}(${ns.format.percent(money_percent)})`;
+
+      logger.Log(
+        `Start cleanup batch on ${cleanup_str}: ${cleanup_server.batches.cleanup?.to_string(
+          ns,
+        )}. Time since start: ${ns.format.time(start_launch_time - start_time, true)}. Compute server: ${
+          compute_servers[0].hostname
+        }[${ns.format.ram(compute_servers[0].freeRam)}]`,
+      );
+
+      const [process_args, thread_args] = get_process_args(cleanup_server, cleanup_server.batches.cleanup);
+      await start_batches(
+        cleanup_server.batches.cleanup,
+        compute_servers[0],
+        process_args,
+        thread_args,
+        hack_server === undefined && cleanup_server.batches.cleanup === waiting_for_sleep,
+      );
+      compute_servers.sortby((cs) => cs.freeRam, false);
+    }
+
+    if (cleanup_servers.length > 0) {
+      const total_free_ram = compute_servers.sum((cs) => cs.freeRam);
+      const total_free_ram_calc = compute_servers_for_cleanup.sum((cs) => cs.freeRam);
+      if (total_free_ram_calc != total_free_ram) {
         logger.Log(
-          `Started CLEANUP batch on ${target_server.hostname} (${ns.format.ram(
-            target_server.ram * started_batches,
-          )}). ` + ` [${cleanup_str}]`,
+          `WARNING: Total free RAM mismatch: r:${total_free_ram} != c:${total_free_ram_calc}. ${JSON.stringify(
+            compute_servers,
+          )} ${JSON.stringify(compute_servers_for_cleanup)}`,
         );
       }
     }
 
+    if (hack_server !== undefined) {
+      compute_servers = compute_servers.filter((cs) => cs.freeRam >= (hack_server?.batches?.optimal?.ram ?? 0));
+      const total_free_ram = compute_servers.sum((cs) => cs.freeRam);
+      let hack_batches = 0;
+      for (let cs_ind = 0; cs_ind < compute_servers.length; ++cs_ind) {
+        const cs = compute_servers[cs_ind];
+        const [process_args, thread_args] = get_process_args(hack_server, hack_server.batches.optimal);
+        hack_batches += await start_batches(
+          hack_server.batches.optimal,
+          cs,
+          process_args,
+          thread_args,
+          cs_ind == compute_servers.length - 1,
+        );
+      }
+
+      logger.Log(
+        `Started ${hack_batches} batches on ${hack_server.hostname} (${ns.format.ram(
+          hack_server.batches.optimal.ram * hack_batches,
+        )}/${ns.format.ram(total_free_ram)}). ` +
+          `Expected steal ${ns.format.number(
+            hack_server.batches.optimal.steal.per_batch * hack_batches * hack_server.hack_chance,
+          )} / ${ns.format.number(
+            hack_server.batches.optimal.steal.total * hack_server.hack_chance,
+          )} in ${ns.format.time(hack_server.batches.optimal.batch_time + 5)} (${ns.format.number(
+            ((hack_server.batches.optimal.steal.per_batch * hack_batches * hack_server.hack_chance) /
+              hack_server.time.weaken) *
+              1000,
+          )}, ${ns.format.number(
+            ((hack_server.batches.optimal.steal.per_batch * hack_batches * hack_server.hack_chance) /
+              hack_server.batches.optimal.batch_time) *
+              1000,
+          )}))`,
+      );
+    }
+    logger.Log(`WARNING: Exec time: ${ns.format.time(performance.now() - start_launch_time, true)}`);
+
     if (started_batches > 0) {
-      if (sleep < Infinity)
-        /*ns.printRaw(
+      /*ns.printRaw(
           <ProgressBar startTime={performance.now()} endTime={performance.now() + sleep} ns={ns}></ProgressBar>,
         );*/
-        logger.Log(`Next finish at ${new Date(Date.now() + sleep).toLocaleString()} `);
-      //await ns.nextPortWrite(ns.pid);
-      if (target_servers[0].cleanup) {
-        logger.Log(`Going to the next iteration while cleanup going on (${target_servers.map((s) => s.hostname)})`);
-        await ns.sleep(0);
-        await ns.sleep(5);
-      } else {
-        extra_time = performance.now() - start_time;
-        ns.print(
-          `INFO: waiting for something to finish.` +
-            ` Next will finish in ${ns.format.time(sleep)} (${target_servers.map(
-              (s) => s.hostname,
-            )}) extra time: ${ns.format.time(extra_time, true)}`,
+      extra_time = performance.now() - start_time;
+      if (waiting_for_sleep !== undefined) {
+        logger.Log(
+          `Next finish at ${new Date(Date.now() + waiting_for_sleep.batch_time).toLocaleString()} in ${ns.format.time(
+            waiting_for_sleep.batch_time,
+            true,
+          )} extra time: ${ns.format.time(extra_time, true)}`,
         );
-        await ns.nextPortWrite(ns.pid);
+        const res = await Promise.any([ns.nextPortWrite(ns.pid), ns.asleep(waiting_for_sleep.batch_time + extra_time)]);
+        if (res === true) {
+          logger.Log(`WARNING: await process timed out`);
+        }
         await ns.sleep(0);
       }
     } else {
-      await ns.sleep(5000);
+      await ns.sleep(60000);
     }
     if (flag.debug) break;
   }
